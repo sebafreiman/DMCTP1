@@ -3,7 +3,7 @@ title: "Trabajo Práctico 1 - Parte 1"
 author: Freiman <sebafreiman@gmail.com>, Louzau <eplouz@gmail.com>, Michalla <barbaramichalla@gmail.com>,
   Ríos <rios.leandromartin@gmail.com>
 date: "13 de septiembre de 2016"
-output: pdf_document
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
@@ -21,7 +21,7 @@ En esta primera parte el objetivo será conocer los datos con que van a trabajar
 Cuando se trabaja en R con proyectos lo que comunmente se denomina Working Directory se setea por defecto.
 ```{r Working Directory}
 # setwd("C:/Users/Lea/Google Drive/MaestriaSTUFF/2doCuat/TPs 2doCuat/Ciencia/TP1Ciencia")
-#setwd("")
+
 
 getwd()
 ```
@@ -30,7 +30,7 @@ Para no tener problemas con la conexión de internet el
 set de datos se puede descargar de <http://astrostatistics.psu.edu/datasets/COMBO17.csv>
 
 ```{r Carga de Datos}
-glx <-read.csv("http://astrostatistics.psu.edu/datasets/COMBO17.csv", header =T, stringsAsFactors =F)
+glx <-read.csv("COMBO17.csv", header =T, stringsAsFactors =F)
 
 ```
 
