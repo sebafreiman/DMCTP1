@@ -375,7 +375,6 @@ Cor_DfMagnitudes <- cor(DfMagnitudes)
 # Para crear nuevas variables 
 # # apply(matriz, 2, function(x){sd(x)/mean(x)})
 
-DfMagnitudes
 head(DfMagnitudes)
 DfMagnitudesNorm <- DfMagnitudes
 
@@ -397,7 +396,6 @@ DfMagnitudesNorm$VnMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'VnMAG')], 1, fu
 head(DfMagnitudesNorm)
 # estaria muy bueno hacerlo tipo funcion que vaya de 1 a 7 
 # y acada variable lea el nombre le agregue "_Norm"
-
 
 ```
 
