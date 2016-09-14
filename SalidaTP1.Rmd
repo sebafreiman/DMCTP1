@@ -181,6 +181,12 @@ which(glx_reducido$Nr == glx[indexfilas_NA[1], 1])
 
 ```{r}
 
+plot(glx$Nr, glx$Rmag,
+    ylim=range(c(glx$Rmag-glx$e.Rmag, glx$Rmag+glx$e.Rmag)),
+    pch=19, xlab="Nro Id Galaxia", ylab="Rmag +/- Error_Incertidumbre",
+    main="Grafico barras de Error_Incertidumbre")
+
+
 plot(glx_reducido$Nr, glx_reducido$Rmag,
     ylim=range(c(glx_reducido$Rmag-glx_reducido$e.Rmag, glx_reducido$Rmag+glx_reducido$e.Rmag)),
     pch=19, xlab="Nro Id Galaxia", ylab="Rmag +/- Error_Incertidumbre",
@@ -269,7 +275,11 @@ plot(glx_reducido$Nr, glx_reducido$Mcz,
 ```{r Gráficos - V}
 
 # install.packages("gridExtra") 
-library(gridExtra) 
+library(gridExtra)
+# p1 <- qplot(BjMAG, S280MAG-BjMAG, data = glx)
+# p2 <- qplot(BbMAG, S280MAG-BbMAG, data = glx)
+# grid.arrange(p1, p2, ncol=2)
+
 p1 <- qplot(BjMAG, S280MAG-BjMAG, data = glx_reducido)
 p2 <- qplot(BbMAG, S280MAG-BbMAG, data = glx_reducido)
 grid.arrange(p1, p2, ncol=2)
@@ -394,6 +404,50 @@ DfMagnitudesNorm$BbMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'BbMAG')], 1, fu
 DfMagnitudesNorm$VnMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'VnMAG')], 1, function(x) { (x[1]-x[2])} )
 
 head(DfMagnitudesNorm)
+# estaria muy bueno hacerlo tipo funcion que vaya de 1 a 7 
+# y acada variable lea el nombre le agregue "_Norm"
+
+```
+
+
+## Tarea 4 - Cor con Pairwise  pero con Outliers
+```{r Armamos las matrices de correlaciones - I}
+espectrales <- c(10,12,14,16,18,20,22,24,26,28)
+glx_cc <- glx
+head( glx_cc[, espectrales] )
+
+DfMagnitudes <- glx_cc[, espectrales]
+Cor_DfMagnitudes <- cor(DfMagnitudes, y = NULL, use = "pairwise.complete.obs",  method = "pearson")
+Cor_DfMagnitudes
+
+head(DfMagnitudes)
+DfMagnitudesNorm <- DfMagnitudes
+head(DfMagnitudesNorm)
+
+DfMagnitudesNorm$UjMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'UjMAG')], 1, function(x) { (x[1]-x[2])} )
+DfMagnitudesNorm$BjMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'BjMAG')], 1, function(x) { (x[1]-x[2])} )
+DfMagnitudesNorm$VjMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'VjMAG')], 1, function(x) { (x[1]-x[2])} )
+
+
+
+DfMagnitudesNorm$usMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'usMAG')], 1, function(x) { (x[1]-x[2])} )
+DfMagnitudesNorm$gsMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'gsMAG')], 1, function(x) { (x[1]-x[2])} )
+DfMagnitudesNorm$rsMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'rsMAG')], 1, function(x) { (x[1]-x[2])} )
+
+
+DfMagnitudesNorm$UbMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'UbMAG')], 1, function(x) { (x[1]-x[2])} )
+DfMagnitudesNorm$BbMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'BbMAG')], 1, function(x) { (x[1]-x[2])} )
+DfMagnitudesNorm$VnMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'VnMAG')], 1, function(x) { (x[1]-x[2])} )
+
+head(DfMagnitudesNorm)
+dim(DfMagnitudesNorm)
+which(colnames(DfMagnitudesNorm)=="S280MAG")
+DfMagnitudesNorm <- DfMagnitudesNorm [, 10:19]
+head(DfMagnitudesNorm)
+
+Cor_DfMagnitudesNorm <- cor(DfMagnitudes, y = NULL, use = "pairwise.complete.obs",  method = "pearson")
+Cor_DfMagnitudesNorm
+
 # estaria muy bueno hacerlo tipo funcion que vaya de 1 a 7 
 # y acada variable lea el nombre le agregue "_Norm"
 
