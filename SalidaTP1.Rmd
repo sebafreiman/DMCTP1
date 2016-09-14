@@ -17,7 +17,7 @@ En esta primera parte el objetivo será conocer los datos con que van a trabajar
 Cuando se trabaja en R con proyectos lo que comunmente se denomina Working Directory se setea por defecto.
 ```{r Working Directory}
 # setwd("C:/Users/Estefi/Downloads") # no me borres el WD, eso dejamelo a mi...
-# setwd("C:/Users/escalada/Documents/TP1_Ciencia2016")
+setwd("C:/Users/escalada/Documents/TP1_Ciencia2016")
 getwd()
 ```
 
@@ -317,7 +317,7 @@ grid.arrange(p4, p5, p6, ncol=3)
 
 ```
 
-```{r Gráficos - VII}
+```{r Gráficos - VIII}
 
 p7<-qplot(VjMAG,S280MAG-VjMAG, data = glx_reducido)
 p8 <-qplot(rsMAG,S280MAG-rsMAG, data = glx_reducido)
@@ -329,11 +329,75 @@ grid.arrange(p7, p8, p9, ncol=3)
 ```
 
 ## Tarea 3
-```{r Gráficos - VII}
+```{r Armamos las matrices de correlaciones - I}
 espectrales <- c(10,12,14,16,18,20,22,24,26,28)
 head( glx_reducido[, espectrales] )
 
 DfMagnitudes <- glx_reducido[, espectrales]
+Cor_DfMagnitudes <- cor(DfMagnitudes)
+
+# mmmm aca parece que me la mande, bien mandada....
+# De los apuntes de clase:
+# Marcelo dice que si haces 
+# # cor(glx[ , espectrales])  
+# te da  una matrix de 
+# correlaciones de todos contra todos, pero en esta matriz hay columnas con
+# NA  y eso es por los NA originales entonces eso se soluciona sacando toda
+# la fila
+# (Nota Leus: El tema es que todos los NA los elimine al ppio cosa que no 
+# me tirase los Warning con los graficos, ademas los saque porque eran pocos
+# e intuia que no deberian estar )
+# Si tenemos una matriz asi:
+#   A   B   C   D
+# 1 N°  N°  N°  N°
+# 2 NA  N°  N°  N°
+# 3 NA  N°  N°  N°
+# 4 NA  N°  N°  N°
+# 5 N°  NA  N°  N°
+# 6 N°  NA  N°  N°
+# 7 N°  N°  N°  N°
+# 8 N°  N°  N°  N°
+# 
+# Otra solucion en vez de borrar las filas con NA en las columnas originales
+# se puede hacer
+# # cor(glx[ , espectrales], use= .....)
+# Si en el use= pones "complete cases" te queda lo mismo que borrando las filas NA
+# y va a ser mas chica que la matriz de origen
+# pero si en el use= pones "pair wise" para la opcion entre AB te quedaría 1,7 y 8
+# sin embardo C y D te quedan todos ES MEJOR (think properly)
+
+# Me parece que lo que hice esta mal porque borre filas con NA al pedo....
+# como encuentro los NA en un dataframe()
+# # apply (matriz, 1 ó 2, anyNA() )
+# # 1 ó 2 -> 1 recorro por fila ; 2 recorro por columna
+# 
+
+# Para crear nuevas variables 
+# # apply(matriz, 2, function(x){sd(x)/mean(x)})
+
+DfMagnitudes
+head(DfMagnitudes)
+DfMagnitudesNorm <- DfMagnitudes
+
+DfMagnitudesNorm$UjMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'UjMAG')], 1, function(x) { (x[1]-x[2])} )
+DfMagnitudesNorm$BjMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'BjMAG')], 1, function(x) { (x[1]-x[2])} )
+DfMagnitudesNorm$VjMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'VjMAG')], 1, function(x) { (x[1]-x[2])} )
+
+
+
+DfMagnitudesNorm$usMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'usMAG')], 1, function(x) { (x[1]-x[2])} )
+DfMagnitudesNorm$gsMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'gsMAG')], 1, function(x) { (x[1]-x[2])} )
+DfMagnitudesNorm$rsMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'rsMAG')], 1, function(x) { (x[1]-x[2])} )
+
+
+DfMagnitudesNorm$UbMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'UbMAG')], 1, function(x) { (x[1]-x[2])} )
+DfMagnitudesNorm$BbMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'BbMAG')], 1, function(x) { (x[1]-x[2])} )
+DfMagnitudesNorm$VnMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'VnMAG')], 1, function(x) { (x[1]-x[2])} )
+
+head(DfMagnitudesNorm)
+# estaria muy bueno hacerlo tipo funcion que vaya de 1 a 7 
+# y acada variable lea el nombre le agregue "_Norm"
+
 
 ```
 
