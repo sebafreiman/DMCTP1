@@ -1,5 +1,5 @@
 ---
-title: "Trabajo Práctico 1 - Parte 1 - (RMD+Git_v5)"
+title: "Trabajo Práctico 1 - Parte 1 - WELCOME LICENCIADA v2"
 author: "Freiman <sebafreiman@gmail.com>, Louzau <eplouz@gmail.com>, Michalla <barbaramichalla@gmail.com>, Ríos <rios.leandromartin@gmail.com>"
 date: "13 de septiembre de 2016"
 output: html_document
@@ -17,8 +17,7 @@ En esta primera parte el objetivo será conocer los datos con que van a trabajar
 Cuando se trabaja en R con proyectos lo que comunmente se denomina Working Directory se setea por defecto.
 ```{r Working Directory}
 # setwd("C:/Users/Estefi/Downloads") # no me borres el WD, eso dejamelo a mi...
-setwd("C:/Users/escalada/Documents/TP1_Ciencia2016")
-# setwd("Another directory")
+# setwd("C:/Users/escalada/Documents/TP1_Ciencia2016")
 getwd()
 ```
 
@@ -46,13 +45,13 @@ VFD     : num  1.73e-02 3.93e-03 1.88e-02 9.67e-03 3.85e-05 3.55e-03 5.04e-03 1.
 
 
 ```{r Observando los datos de la variabe en cuestion}
-glx$e.W420FE
+head (glx$e.W420FE, 250)
 ```
 Por simple inspección se pude apreciar que existen datos con espacios.
 
 ```{r COnversion simple}
 variable_error <- as.numeric (glx$e.W420FE) # tira warnings porque los que no puede convertir, los pone con NA
-variable_error
+head (variable_error, 250)
 ```
 La conversión presenta un mensaje de Warning:
 
@@ -127,19 +126,87 @@ glx$e.W420FE[variable_error_index] <- variable_error_datosnum
 
 glx$e.W420FE <- as.numeric(glx$e.W420FE)
 
-glx$e.W420FE
+head (glx$e.W420FE,350)
 
 ```
 
 
-## Realizando Gráficos exploratorios
-Realizaremos varios gráficos en todo a la variableApDRmag
+## TAREA 2 y 3 -  
+Realizaremos varios gráficos  explotatorios y trataremos de vizualizar e identificar valores anómalos y valores NA.
+```{r}
 
-```{r Gráficos - I}
+which(is.na(glx$Nr))
+which(is.na(glx$Rmag))
+which(is.na(glx$e.Rmag))
+which(is.na(glx$Mcz))
+
+which(is.na(glx$UjMAG))
+which(is.na(glx$BjMAG))
+which(is.na(glx$VjMAG))
+
+which(is.na(glx$usMAG))
+which(is.na(glx$gsMAG))
+which(is.na(glx$rsMAG))
+
+which(is.na(glx$UbMAG))
+which(is.na(glx$BbMAG))
+which(is.na(glx$VnMAG)) # tiene NA
+
+which(is.na(glx$S280MAG)) # tiene NA
+# which(colnames(glx)=="S280MAG")
+
+```
+
+```{r}
+which(is.na(glx$VnMAG)) # tiene NA
+which(is.na(glx$S280MAG)) # tiene NA
+
+indexfilas_NA <- c(which(is.na(glx$VnMAG)), which(is.na(glx$S280MAG)) )
+unique (indexfilas_NA)  
+
+# # como se podria hacer sin revisar todos los valores columna por columna??
+# #  no anda :(
+# index_NA <- c(which(is.na(glx[,1:28])))
+# index_NA  
+  
+```
+
+```{r}
+glx[indexfilas_NA[1], 1]
+glx_reducido <- glx [-(indexfilas_NA),] # esto no esta bueno porque genero una copia de la DATA
+                                      # para archivos grandes no so good
+which(glx_reducido$Nr == glx[indexfilas_NA[1], 1])
+
+```
+
+```{r}
+
+plot(glx_reducido$Nr, glx_reducido$Rmag,
+    ylim=range(c(glx_reducido$Rmag-glx_reducido$e.Rmag, glx_reducido$Rmag+glx_reducido$e.Rmag)),
+    pch=19, xlab="Nro Id Galaxia", ylab="Rmag +/- Error_Incertidumbre",
+    main="Grafico barras de Error_Incertidumbre")
+# no tengo bien claro que es esto pero funca
+# hack: we draw arrows but with very special "arrowheads"
+arrows(glx_reducido$Nr, glx_reducido$Rmag-glx_reducido$e.Rmag,glx_reducido$Nr, glx_reducido$Rmag+glx_reducido$e.Rmag, length=0.05, angle=90, code=3)
+
+warnings()
+# no entiendo el error...
+# 23: In arrows(glx_reducido$Nr, glx_reducido$Rmag - glx_reducido$e.Rmag,  ... :
+#   zero-length arrow is of indeterminate angle and so skipped
+# 24: zero-length arrow is of indeterminate angle and so skipped
+
+```
+
+Resulta muy complicado visualizar algo... como podemos saber si hay valores extremos ???
+
+
+Pasemos a analizar la segunda variable ApDRmag
+
+```{r Gráficos - }
 library(ggplot2)
 #install.packages("ggplot2")
 
-hist (glx$ApDRmag, main= "Histograma de ApDRmag", xlab="ApDRmag")
+hist (glx_reducido$ApDRmag, main= "Histograma de ApDRmag", xlab="ApDRmag")
 
 ```
 
@@ -148,8 +215,9 @@ El problema con los histogramas que son los rangos o la cantidad de clases, los 
 En general es preferible los gráficos de densidad de kernel, los cuales son una función continua y pueden someterse a la una derivada.
 
 Realizamos un gráfico simple de densidad de kernel. Son muy recomendables cuando se tienen muchos registros.
+
 ```{r Gráficos - II}
-plot (density(glx$ApDRmag), main="Densidad de kernel")
+plot (density(glx_reducido$ApDRmag), main="Densidad de kernel")
 ```
 
 El boxplot es una nos presenta de manera gráfica el valor de la media, 1er y 3er cuartil y los (supuestos) outliers.
@@ -157,32 +225,15 @@ Pero debe tenerse en consideración que el diagrama de cajas fue pensado para tr
 Hoy en día, los grandes volumenes de datos que se manejan hacen más presente la idea de poder tener (supuestos) outliers.
 
 ```{r Gráficos - III}
-boxplot(glx$ApDRmag)
+boxplot(glx_reducido$ApDRmag)
 ```
 
-A continuación realizaremos los gráficos con la libreria ggplot
 
-```{r Gráficos - IV}
-# qplot (ApDRmag , data = glx) # VER tidy data
-# 
-# qplot (factor (0), glx$ApDRmag, geom = "boxplot", xlab= "", data=glx ) # factor(0) es para forzarle el valor de x = 0
-# 
-# ggplot (data = glx, aes(x=ApDRmag)) + geom_histogram() 
-# # es viene de estetica, que hace referencia a las variables que se quieren representar
-# # el +geom_histogram () seria la forma, es decir como represento los datos. El signo + es por la primer capa
-# 
-# ggplot (data = glx, aes(x=ApDRmag)) + geom_density()
-# 
-# ggplot (data = glx, aes(x=ApDRmag)) + geom_density(kernel = "epanechnikov")
-# # se estima la densidad con epanechnikov
-# 
-# ggplot (data = glx, aes(x=ApDRmag)) + geom_histogram() + geom_density()
-
-ggplot(glx, aes( x = ApDRmag) ) + geom_histogram( aes(y = ..density..), color = "black", fill = "beige") + geom_density( kernel = "epanechnikov", color="red")
-
+```{r Gráficos - I}
+ggplot(glx_reducido, aes( x = ApDRmag) ) + geom_histogram( aes(y = ..density..), color = "black", fill = "beige")+geom_density( kernel = "epanechnikov", color="red")
 ```
 
-Como se puede apreciar, la librería ggplot es mas vistosa. La palabra clave "aes" esta relacionada con la estetica, que hace referencia a las variables que se quieren representar.
+como se puede apreciar, la librería ggplot es mas vistosa. La palabra clave "aes" esta relacionada con la estetica, que hace referencia a las variables que se quieren representar.
 Luego +geom_histogram() seria la forma, es decir como represento los datos. El signo + es por la primer capa.
 En este caso la segunda capa esta referida +geom_density() 
 
@@ -190,44 +241,99 @@ Se debe destacar la nomenclatura utilizada: x = ApDRmag en vez de: x = glx$ApDRm
 De esta forma el creador de la libreria ggplot, Hadley Wickham, es consistente con su filosofía "Tidy data" paper publicado en "The Journal of Statistical Software, vol. 59, 2014"
 
 
+
+
+```{r}
+plot(glx_reducido$Nr, glx_reducido$ApDRmag,
+    pch=19, xlab="Nro Id Galaxia", ylab="ApDRmag",
+    main="Grafico ApDRmag")
+
+```
+
+Se procede a eliminar la fila que tieneese punto anomalo
+
+```{r}
+which.min(glx_reducido$ApDRmag) 
+glx_reducido <- glx_reducido[- which.min(glx_reducido$ApDRmag) , ]
+
+
+```
+
+```{r}
+
+plot(glx_reducido$Nr, glx_reducido$Mcz,
+    pch=19, xlab="Nro Id Galaxia", ylab="ApDRmag",
+    main="Grafico Mcz")
+```
 ## Otros gráficos y técnicas de diagnóstico.
 ```{r Gráficos - V}
 
-head(glx)
-
 # install.packages("gridExtra") 
 library(gridExtra) 
-p1 <- qplot(BjMAG, S280MAG-BjMAG, data = glx)
-p2 <- qplot(BbMAG, S280MAG-BbMAG, data = glx)
+p1 <- qplot(BjMAG, S280MAG-BjMAG, data = glx_reducido)
+p2 <- qplot(BbMAG, S280MAG-BbMAG, data = glx_reducido)
 grid.arrange(p1, p2, ncol=2)
 
 
 which.max(glx$BjMAG) 
-glx[2,1:13]
+#glx[2,1:13]
 glx$BjMAG[2]
-
-which(is.na(glx$BjMAG))
-which(is.na(glx$BbMAG))
-which(is.na(glx$S280MAG))
 
 ```
 
 Eliminando el outlier y volvemos a graficar
 
 ```{r Gráfico - VI}
-p3<-qplot(BjMAG,S280MAG-BjMAG, data = glx[-c(2),])
-grid.arrange(p3, p2, ncol=2)
+glx_reducido <- glx_reducido[- which.max(glx_reducido$BjMAG) , ]
+
+p1<-qplot(BjMAG,S280MAG-BjMAG, data = glx_reducido)
+p2 <- qplot(gsMAG,S280MAG-gsMAG, data = glx_reducido)
+p3 <- qplot(BbMAG, S280MAG-BbMAG, data = glx_reducido)
+grid.arrange(p1, p2, p3, ncol=3)
 ```
 
-No obstante seguimos apreciando que teemos 24 filas con missing values
+```{r Gráficos - VII}
 
-```{r Gráfico - VII}
-index <- c(which.max(glx$BjMAG),which(is.na(glx$S280MAG)) )
-# index
-# typeof(index)
-p5 <- qplot(BjMAG, S280MAG-BjMAG, data = glx[-index,])
-p6 <- qplot(BbMAG, S280MAG-BbMAG, data = glx[-index,])
-grid.arrange(p5, p6, ncol=2)
+p4<-qplot(UjMAG,S280MAG-UjMAG, data = glx_reducido)
+p5 <-qplot(usMAG,S280MAG-usMAG, data = glx_reducido)
+p6 <- qplot(UbMAG,S280MAG-UbMAG, data = glx_reducido)
+grid.arrange(p4, p5, p6, ncol=3)
+
+which.max(glx_reducido$S280MAG-glx_reducido$UjMAG) 
+which.max(glx_reducido$S280MAG-glx_reducido$usMAG)
+which.min(glx_reducido$UjMAG)
+which.min(glx_reducido$usMAG)
+
+# como saco los cuatro menores de S280MAG-UbMAG
+
+glx_reducido <- glx_reducido[-c (which.max(glx_reducido$S280MAG-glx_reducido$UjMAG),which.min(glx_reducido$usMAG)), ]
+
+
+p4<-qplot(UjMAG,S280MAG-UjMAG, data = glx_reducido)
+p5 <-qplot(usMAG,S280MAG-usMAG, data = glx_reducido)
+p6 <- qplot(UbMAG,S280MAG-VnMAG, data = glx_reducido)
+grid.arrange(p4, p5, p6, ncol=3)
 
 
 ```
+
+```{r Gráficos - VII}
+
+p7<-qplot(VjMAG,S280MAG-VjMAG, data = glx_reducido)
+p8 <-qplot(rsMAG,S280MAG-rsMAG, data = glx_reducido)
+p9 <- qplot(VnMAG,S280MAG-VnMAG, data = glx_reducido)
+grid.arrange(p7, p8, p9, ncol=3)
+
+# como saco los cinco menores de S280MAG-VjMAG
+
+```
+
+## Tarea 3
+```{r Gráficos - VII}
+espectrales <- c(10,12,14,16,18,20,22,24,26,28)
+head( glx_reducido[, espectrales] )
+
+DfMagnitudes <- glx_reducido[, espectrales]
+
+```
+
