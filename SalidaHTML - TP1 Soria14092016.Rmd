@@ -1,5 +1,5 @@
 ---
-title: "Trabajo Práctico 1 - Parte 1 - (RMD+Git_v4)"
+title: "Trabajo Práctico 1 - Parte 1"
 author: "Freiman <sebafreiman@gmail.com>, Louzau <eplouz@gmail.com>, Michalla <barbaramichalla@gmail.com>, Ríos <rios.leandromartin@gmail.com>"
 date: "13 de septiembre de 2016"
 output: html_document
@@ -16,8 +16,7 @@ En esta primera parte el objetivo será conocer los datos con que van a trabajar
 
 Cuando se trabaja en R con proyectos lo que comunmente se denomina Working Directory se setea por defecto.
 ```{r Working Directory}
-# setwd("C:/Users/Estefi/Downloads") # no me borres el WD, eso dejamelo a mi...
-# setwd("C:/Users/escalada/Documents/TP1_Ciencia2016")
+setwd("C:/Users/Estefi/Downloads")
 getwd()
 ```
 
@@ -206,9 +205,8 @@ glx[2,1:13]
 glx$BjMAG[2]
 
 which(is.na(glx$BjMAG))
-which(is.na(glx$BbMAG))
-which(is.na(glx$S280MAG))
 
+which(is.na(glx$BbMAG))
 ```
 
 Eliminando el outlier y volvemos a graficar
@@ -216,17 +214,4 @@ Eliminando el outlier y volvemos a graficar
 ```{r Gráfico - VI}
 p3<-qplot(BjMAG,S280MAG-BjMAG, data = glx[-c(2),])
 grid.arrange(p3, p2, ncol=2)
-```
-
-No obstante seguimos apreciando que teemos 24 filas con missing values
-
-```{r Gráfico - VII}
-index <- c(which.max(glx$BjMAG),which(is.na(glx$S280MAG)) )
-# index
-# typeof(index)
-p5 <- qplot(BjMAG, S280MAG-BjMAG, data = glx[-index,])
-p6 <- qplot(BbMAG, S280MAG-BbMAG, data = glx[-index,])
-grid.arrange(p5, p6, ncol=2)
-
-
 ```
