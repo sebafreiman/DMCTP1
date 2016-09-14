@@ -1,5 +1,5 @@
 ---
-title: "Trabajo Práctico 1 - Parte 1 - hecho con RMD+GIT"
+title: "Trabajo Práctico 1 - Parte 1 - hecho con RMD+GIT v2"
 author: Freiman <sebafreiman@gmail.com>, Louzau <eplouz@gmail.com>, Michalla <barbaramichalla@gmail.com>,
   Ríos <rios.leandromartin@gmail.com>
 date: "13 de septiembre de 2016"
@@ -140,7 +140,7 @@ glx$e.W420FE
 ## Realizando Gráficos exploratorios
 Realizaremos varios gráficos en todo a la variableApDRmag
 
-```{r Gráficos - I, echo=True}
+```{r Gráficos - I}
 library(ggplot2)
 #install.packages("ggplot2")
 
@@ -151,7 +151,7 @@ El problema con los histogramas que son los rangos o la cantidad de clases, los 
 En general es preferible los gráficos de densidad de kernel, los cuales son una función continua y pueden someterse a la una derivada.
 
 Realizamos un gráfico simple de densidad de kernel. Son muy recomendables cuando se tienen muchos registros.
-```{r Gráficos - II, echo=True}
+```{r Gráficos - II}
 plot (density(glx$ApDRmag))
 ```
 
@@ -159,13 +159,13 @@ El boxplot es una nos presenta de manera gráfica el valor de la media, 1er y 3e
 Pero debe tenerse en consideración que el diagrama de cajas fue pensado para trabajar con datos en los años 70.
 Hoy en día, los grandes volumenes de datos que se manejan hacen más presente la idea de poder tener (supuestos) outliers.
 
-```{r Gráficos - III, echo=True}
+```{r Gráficos - III}
 boxplot(glx$ApDRmag)
 ```
 
 A continuación realizaremos los gráficos con la libreria ggplot
 
-```{r Gráficos - IV, echo=True}
+```{r Gráficos - IV}
 # qplot (ApDRmag , data = glx) # VER tidy data
 # 
 # qplot (factor (0), glx$ApDRmag, geom = "boxplot", xlab= "", data=glx ) # factor(0) es para forzarle el valor de x = 0
@@ -194,7 +194,7 @@ De esta forma el creador de la libreria ggplot, Hadley Wickham, es consistente c
 
 
 ## Otros gráficos y técnicas de diagnóstico.
-```{r Gráficos - , echo=True}
+```{r Gráficos - }
 
 head(glx)
 
@@ -215,16 +215,15 @@ which(is.na(glx$BbMAG))
 
 
 
-```{r Gráficos x - , echo=True}
+```{r Gráficos x - }
 #-----------------
 # explica algo
 algo <- c(1,2,70,3,4)
 max(algo)
 which.max(algo)
-
----------------
+# ---------------
 
 datos<-matrix(c(1,2,3,10,20,30,100,NA,300),nrow=3,byrow=T) 
-dimnames(datos)<-list(,c("edad","peso","altura"))
+dimnames(datos)<-list(c("edad","peso","altura"))
 apply(datos, 2,anyNA)
 ```
