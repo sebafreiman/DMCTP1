@@ -1,0 +1,230 @@
+---
+title: "Trabajo Práctico 1 - Parte 1"
+author: Freiman <sebafreiman@gmail.com>, Louzau <eplouz@gmail.com>, Michalla <barbaramichalla@gmail.com>,
+  Ríos <rios.leandromartin@gmail.com>
+date: "13 de septiembre de 2016"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# chicos es muy probable que haya que corres esto desde la consola
+# install.packages("rmarkdown")
+
+```
+
+## Preparacion de los datos
+
+En esta primera parte el objetivo será conocer los datos con que van a trabajar, realizar un análisis exploratorio y detectar y solucionar varios problemas que presentan los datos.
+
+
+Cuando se trabaja en R con proyectos lo que comunmente se denomina Working Directory se setea por defecto.
+```{r Working Directory}
+# setwd("C:/Users/Lea/Google Drive/MaestriaSTUFF/2doCuat/TPs 2doCuat/Ciencia/TP1Ciencia")
+#setwd("")
+
+getwd()
+```
+
+Para no tener problemas con la conexión de internet el 
+set de datos se puede descargar de <http://astrostatistics.psu.edu/datasets/COMBO17.csv>
+
+```{r Carga de Datos}
+glx <-read.csv("http://astrostatistics.psu.edu/datasets/COMBO17.csv", header =T, stringsAsFactors =F)
+
+```
+
+```{r Previsualizacion de los datos}
+# summary (glx)
+# head (glx) # 
+str (glx)
+```
+
+Se puede apreciar que la variable "e.W420FE" ha sido considerada de tipo caracter.
+
+e.W420FE: chr  "3.85E-03" "3.19E-03" "4.11E-03" "2.70E-03" ...
+
+Dado la nomenclatura utilizada sabemos que se trata de un error y por lo tanto debería ser considerada como variable numérica. 
+Se intuye que el primer problema podría ser la notación científica esta especificada con la letra mayúscula "E", dado que en la variable VFD presenta la la notación científica con la letra "e" minúscula.
+
+VFD     : num  1.73e-02 3.93e-03 1.88e-02 9.67e-03 3.85e-05 3.55e-03 5.04e-03 1.20e-04 8.59e-03 1.46e-02 
+
+
+```{r Observando los datos de la variabe en cuestion}
+glx$e.W420FE
+```
+Por simple inspección se pude apreciar que existen datos con espacios.
+
+```{r COnversion simple}
+variable_error <- as.numeric (glx$e.W420FE) # tira warnings porque los que no puede convertir, los pone con NA
+variable_error
+```
+La conversión presenta un mensaje de Warning:
+
+"variable_error <- as.numeric (glx$e.W420FE)
+Warning message:
+NAs introduced by coercion"
+
+Los datos que no tienen espacio no pueden ser convertidos a variable numérica y la misma función les asigna NA.
+
+```{r Tatamiento de los NA - I}
+# is.na(variable_error) # Con esta instrucción nos devuelve un vector con valor TRUE para aquellos que son NA
+# which (is.na(variable_error)) # Encadenando la funcion Which nos devuelve los valores de las posiciones que son NA
+table(is.na(variable_error)) # es bueno mostrar que hay 143 sobre los 3319+143 que tiene NA
+```
+Mediante la tabla se puede mostrar que existen 143 datos Na sobre un total de (3319 + 143) = 3462
+
+
+```{r Tatamiento de los NA - II}
+# # ---------- Explicacion ------------
+# va <- c(100,101,102,103) # se crea un vector de 4 posiciones
+# va[1] # Recordar que en R se indexa con base 1. Es decir va[1] es el primer elemento del vector osea 100
+# va[c(T,F,T,T)] #acá se puede ver como podemos indexar mediante un un 
+# # -------------------------------------
+
+glx$e.W420FE[is.na(variable_error)] # con esto veo los datos originales donde tengo un problema de espacio
+# glx$e.W420FE[!is.na(variable_error)] # asi lo niego 
+```
+
+Se puede apreciar que los 143 datos que no fueron convertidos a "numeric", poseen una patrón en su estructura.
+La misma tiene presenta el siguiente patrón:
+dígito-espacios-numero_notación_exponencial
+Se desconoce cual puede ser valor válido, para estos datos. Se tomará como criterio, que el numero_notación_exponencial será el correcto.
+
+
+```{r Tatamiento de los NA - III}
+variable_error_index <- which (is.na(variable_error)) # guardamos los índices donde se encuentran los 143 datos que no fueron convertidos a "numeric"
+
+# # ---------- Explicacion ------------
+# strsplit("a_b", "_")    # la salida es una lista con los elementos "a" y "b"
+# strsplit("a$b", "\\$")  # la doble contrabarra nos pertime separar caracteres especiales
+# # -----------------------------------
+
+# strsplit(glx$e.W420FE[variable_error_index], "  ")
+variable_error_lista <- strsplit(glx$e.W420FE[variable_error_index], "  ")
+# variable_error_lista[143]       # aquí se encuentra la lista con el "dígito" y el  "número_notación_exponencial"
+# variable_error_lista[[143]][2]  # aquí se encuentra el  "número_notación_exponencial" OJO es char
+```
+
+La función strsplit nos devuelve una lista con el "dígito" y el "número_notación_exponencial".
+Para obtener el segundo elemento de esa lista, no es recomendable utilizar ciclos FOR en el lenguage R
+Como alternativa existen funciones: 
+* apply
+* lapply
+* sapply
+
+```{r Tatamiento de los NA - IV}
+# sapply (variable_error_lista, "[[", 2) 
+# Le pedimos a la funcion que nos devuelva el elemento 2, de cada elemento de la lista. Esto de cada elemento de la lista se hace  con: "[["
+
+variable_error_datos <- sapply (variable_error_lista, "[[", 2)
+# typeof(variable_error_datos) # debemos recordar que el 2do elemento de la lista es tipo char
+variable_error_datosnum <- as.numeric(variable_error_datos)
+
+# # ---------- Explicacion ------------------
+# # Que hubiera sucedido con: lapply
+# variable_error_datos2 <- lapply (variable_error_lista, "[[", 2)
+# typeof(variable_error_datos2)
+# # lapply te devuelve una lista mientras que sapply te devuelve una vector (sapply de simplify)
+# # ----------------------------------------
+
+glx$e.W420FE[variable_error_index] <- variable_error_datosnum
+
+glx$e.W420FE <- as.numeric(glx$e.W420FE)
+
+glx$e.W420FE
+
+```
+
+
+## Realizando Gráficos exploratorios
+Realizaremos varios gráficos en todo a la variableApDRmag
+
+```{r Gráficos - I, echo=True}
+library(ggplot2)
+#install.packages("ggplot2")
+
+hist (glx$ApDRmag)
+
+```
+El problema con los histogramas que son los rangos o la cantidad de clases, los cuales son deteminados de forma empírica. Otro inconveniente es el ancho de clase suele ser una variable a tener en consideración. Pero debe hacerse especial hincapie en el rango desde y hasta donde se desea visualizar. 
+En general es preferible los gráficos de densidad de kernel, los cuales son una función continua y pueden someterse a la una derivada.
+
+Realizamos un gráfico simple de densidad de kernel. Son muy recomendables cuando se tienen muchos registros.
+```{r Gráficos - II, echo=True}
+plot (density(glx$ApDRmag))
+```
+
+El boxplot es una nos presenta de manera gráfica el valor de la media, 1er y 3er cuartil y los (supuestos) outliers.
+Pero debe tenerse en consideración que el diagrama de cajas fue pensado para trabajar con datos en los años 70.
+Hoy en día, los grandes volumenes de datos que se manejan hacen más presente la idea de poder tener (supuestos) outliers.
+
+```{r Gráficos - III, echo=True}
+boxplot(glx$ApDRmag)
+```
+
+A continuación realizaremos los gráficos con la libreria ggplot
+
+```{r Gráficos - IV, echo=True}
+# qplot (ApDRmag , data = glx) # VER tidy data
+# 
+# qplot (factor (0), glx$ApDRmag, geom = "boxplot", xlab= "", data=glx ) # factor(0) es para forzarle el valor de x = 0
+# 
+# ggplot (data = glx, aes(x=ApDRmag)) + geom_histogram() 
+# # es viene de estetica, que hace referencia a las variables que se quieren representar
+# # el +geom_histogram () seria la forma, es decir como represento los datos. El signo + es por la primer capa
+# 
+# ggplot (data = glx, aes(x=ApDRmag)) + geom_density()
+# 
+# ggplot (data = glx, aes(x=ApDRmag)) + geom_density(kernel = "epanechnikov")
+# # se estima la densidad con epanechnikov
+# 
+# ggplot (data = glx, aes(x=ApDRmag)) + geom_histogram() + geom_density()
+
+ggplot(glx, aes( x = ApDRmag) ) + geom_histogram( aes(y = ..density..), color = "black", fill = "beige") + geom_density( kernel = "epanechnikov", color="red")
+
+```
+
+Como se puede apreciar, la librería ggplot es mas vistosa. La palabra clave "aes" esta relacionada con la estetica, que hace referencia a las variables que se quieren representar.
+Luego +geom_histogram() seria la forma, es decir como represento los datos. El signo + es por la primer capa.
+En este caso la segunda capa esta referida +geom_density() 
+
+Se debe destacar la nomenclatura utilizada: x = ApDRmag en vez de: x = glx$ApDRmag
+De esta forma el creador de la libreria ggplot, Hadley Wickham, es consistente con su filosofía "Tidy data" paper publicado en "The Journal of Statistical Software, vol. 59, 2014"
+
+
+## Otros gráficos y técnicas de diagnóstico.
+```{r Gráficos - , echo=True}
+
+head(glx)
+
+# install.packages("gridExtra") 
+library(gridExtra) 
+p1 <- qplot(BjMAG, S280MAG-BjMAG, data = glx)
+p2 <- qplot(BbMAG, S280MAG-BbMAG, data = glx)
+grid.arrange(p1, p2, ncol=2)
+
+
+which.max(glx$BjMAG) 
+glx[2,1:13]
+
+which(is.na(glx$BjMAG))
+
+which(is.na(glx$BbMAG))
+```
+
+
+
+```{r Gráficos x - , echo=True}
+#-----------------
+# explica algo
+algo <- c(1,2,70,3,4)
+max(algo)
+which.max(algo)
+
+---------------
+
+datos<-matrix(c(1,2,3,10,20,30,100,NA,300),nrow=3,byrow=T) 
+dimnames(datos)<-list(,c("edad","peso","altura"))
+apply(datos, 2,anyNA)
+```
