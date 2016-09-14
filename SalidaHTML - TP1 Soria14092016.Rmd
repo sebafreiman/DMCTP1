@@ -16,7 +16,8 @@ En esta primera parte el objetivo será conocer los datos con que van a trabajar
 
 Cuando se trabaja en R con proyectos lo que comunmente se denomina Working Directory se setea por defecto.
 ```{r Working Directory}
-setwd("C:/Users/Estefi/Downloads")
+#setwd("C:/Users/Estefi/Downloads")
+setwd("C:/Users/escalada/Documents/TP1_Ciencia2016")
 getwd()
 ```
 
