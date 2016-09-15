@@ -1,0 +1,497 @@
+---
+title: 'DataMining en Ciencias. Trabajo Práctico 1: Procesamiento de los datos'
+author: Freiman Sebastián <sebafreiman@gmail.com>, Louzau Estefanía <eplouz@gmail.com>,
+  Michalla Bárbara <barbaramichalla@gmail.com>, Ríos Leandro Martín <rios.leandromartin@gmail.com>
+date: "13 de septiembre de 2016"
+output:
+  html_document:
+    toc: yes
+  pdf_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+El objetivo de esta primera parte del trabajo práctico es conocer los datos con que van a trabajar, realizar un análisis exploratorio y detectar y solucionar varios problemas que presentan los datos.
+
+El trabajo realizado se organiza en las siguientes secciones.
+
+## Preparación de los datos
+
+A continuación se describen las técnicas y herramientas utilizadas para preparar los datos que se pretende analizar.
+
+La herramienta principal en la que se apoya este trabajo es [R](https://www.r-project.org/), utilizándose a través del [RStudio](https://www.rstudio.com/) y varios de los paquetes que provee [CRAN](https://cran.r-project.org/) y el propio software.
+
+### Configuración del entorno
+
+Para comenzar, se setea el directorio de trabajo, comunmente denominado _Working Directory_ de donde se obtendrán los datasets y donde se almacenarán los resultados parciales obtenidos.
+
+```{r Working Directory}
+# setwd("C:/Users/Estefi/Downloads") # no me borres el WD, eso dejamelo a mi...
+#setwd("D:/MAESTRIA/DM_Ciencias/DMCTP1-master")
+#setwd("C:/Users/escalada/Documents/TP1_Ciencia2016")
+#getwd()
+```
+
+El dataset describe un subconjunto de 3462 galaxias captadas en una región del cielo a través de unas 64 variables. El mismo se puede obtener desde la web de [astrostatics](http://astrostatistics.psu.edu/datasets/COMBO17.csv) 
+
+A efectos prácticos, se descarga el mismo al directorio de trabajo.
+
+```{r Carga de Datos}
+glx <- read.csv("COMBO17.csv", header = T, stringsAsFactors = F)
+```
+
+### Análisis de los datos
+
+Se realiza una previsualización de los datos y se revisa con qué formato R interpretó a los mismos.
+
+```{r Previsualizacion de los datos}
+# summary (glx)
+# head (glx) # 
+str (glx)
+```
+
+Se aprecia que los datos corresponden mayormente a variables numéricas, dado que se incluyen estimadores del tamaño de la galaxia, de su corrimiento al rojo y datos y flujos y magnitudes absolutas obtenidas a diferentes longitudes de onda.
+
+Pero una de las variables, `e.W420FE` fue importada como tipo caracter.
+
+```{r}
+str(glx$e.W420FE)
+```
+
+Por el tipo de nomenclatura utilizada, se puede deducir que se trata de un error y que debería ser considerada como variable numérica.
+
+Se intuye que la causa del problema podría ser la notación científica esta especificada con la letra mayúscula "E", dado que comparada con la variable `VFD`, se observa que la misma presenta la notación científica con la letra "e" minúscula.
+
+```{r}
+str(glx$VFD)
+```
+
+Por lo tanto se procede a intentar convertirla al tipo numérico.
+
+```{r Observando los datos de la variabe en cuestion}
+# Se guarda la variable forzada a numeric en un vector
+variable_error <- as.numeric(glx$e.W420FE)
+```
+
+Se obtiene un Warning que indica que hubo valores que no pudo convertir, los cuales dejó como `NA` o nulos.
+
+Se imprime un resumen para identificar cuál fue el volumen de registros que no consiguió convertir y cuáles son los valores de dichos registros.
+
+```{r Observando los datos de la variabe en cuestion 2}
+# Se pide un resumen de cuántas posiciones del vector quedaron nulas
+# Con esta instrucción nos devuelve un vector con valor TRUE para aquellos que son NA
+table(is.na(variable_error))
+
+# Se observan cuáles son los datos del dataset original que corresponden a 
+# las posiciones nulas del vector anterior
+glx$e.W420FE[is.na(variable_error)]
+
+```
+
+Por simple inspección se puede apreciar que los 143 datos que no fueron convertidos a "numeric", poseen el siguiente patrón en su estructura.
+
+> `dígito + 2 espacios + numero en notación exponencial`
+
+El equipo consensuó que por el rango esperado de la variable, se debe tomar como criterio válido que la porción correspondiente al llamado `numero en notación exponencial` es el correcto valor de la misma.
+
+Se aplica la función `strsplit` para dividir el campo utilizando los espacios centrales. La función devuelve una lista con el `dígito` en la primera posición y el `número_notación_exponencial` en la segunda.
+Para obtener el segundo elemento de esa lista, dado que no es recomendable utilizar ciclos FOR en el lenguage R, se utiliza la función `sapply`.
+
+La misma proviene de la familia de funciones: 
+
+- apply
+- lapply
+- sapply
+
+```{r Tratamiento de los NA}
+variable_error_index <- which (is.na(variable_error)) # guardamos los índices donde se encuentran los 143 datos que no fueron convertidos a "numeric"
+
+# # ---------- Explicacion ------------
+# strsplit("a_b", "_")    # la salida es una lista con los elementos "a" y "b"
+# strsplit("a$b", "\\$")  # la doble contrabarra nos pertime separar caracteres especiales
+# # -----------------------------------
+
+# strsplit(glx$e.W420FE[variable_error_index], "  ")
+variable_error_lista <- strsplit(glx$e.W420FE[variable_error_index], "  ")
+# variable_error_lista[143]       # aquí se encuentra la lista con el "dígito" y el  "número_notación_exponencial"
+# variable_error_lista[[143]][2]  # aquí se encuentra el  "número_notación_exponencial" OJO es char
+
+# sapply (variable_error_lista, "[[", 2) 
+# Le pedimos a la funcion que nos devuelva el elemento 2, de cada elemento de la lista. Esto de cada elemento de la lista se hace  con: "[["
+
+variable_error_datos <- sapply (variable_error_lista, "[[", 2)
+```
+
+Una vez obtenido el dato para la variable, se repite el procedimiento de conversión a `numeric`, del cual ya no se obtienen errores o warnings.
+
+Por lo tanto se procede a reemplazar los datos originales de la variable por los datos transformados, para poder operarlo correctamente en los sucesivos análisis, comprobándose que ahora los datos son del tipo `numeric` y no se observan valores `NA`.
+
+```{r Tratamiento de los NA - IV}
+
+# typeof(variable_error_datos) # debemos recordar que el 2do elemento de la lista es tipo char
+variable_error_datosnum <- as.numeric(variable_error_datos)
+
+# # ---------- Explicacion ------------------
+# # Que hubiera sucedido con: lapply
+# variable_error_datos2 <- lapply (variable_error_lista, "[[", 2)
+# typeof(variable_error_datos2)
+# # lapply te devuelve una lista mientras que sapply te devuelve una vector (sapply de simplify)
+# # ----------------------------------------
+
+# Reemplazamos los datos de la var en el dataset original
+glx$e.W420FE[variable_error_index] <- variable_error_datosnum
+
+# Transformamos la variable a numeric
+glx$e.W420FE <- as.numeric(glx$e.W420FE)
+
+# Vemos el tipo de datos que quedó en el dataset.
+str(glx$e.W420FE)
+
+# Para saber si después de la conversión quedaron NAs
+table(is.na(glx$e.W420FE))
+```
+
+## Tratamiento de Datos Faltantes
+
+Con el objetivo de identificar la presencia de valores extremos o datos faltantes, se realizan controles mediante la observación de tablas y gráficos exploratorios que ayuden a vizualizarlos.
+
+En primer lugar se verifica la presencia de datos faltantes en cualquiera de las variables del dataset.
+
+El resultado indica que hay datos faltantes en 50 registros y que los mismos se distribuyen en 4 variables:
+
+```{r}
+table(is.na(glx))
+
+colnames(glx)[apply(glx,2,anyNA)]
+
+indexfilas_NA <- as.numeric(rownames(glx[rowSums(is.na(glx)) > 0,]))
+```
+
+El equipo considera que la cantidad de casos con datos faltantes es despreciable, por lo que se procede a eliminar dichas observaciones para asegurar que se trabajará con datos completos y sin rellenar.
+
+Se comprueba que luego de retirados dichos casos, el dataset obtenido ya no posee datos faltantes:
+
+```{r}
+glx_reducido <- glx[-(indexfilas_NA),] 
+
+table(is.na(glx_reducido))
+
+```
+
+## Tratamiento de Outliers
+
+Se comienza analizando las variables `Rmag` y `e.Rmag`, que representan la magnitud total en la banda R y su error de medición. 
+
+
+```{r Gráficos }
+library(ggplot2)
+#install.packages("ggplot2")
+
+hist (glx_reducido$ApDRmag, main= "Histograma de ApDRmag", xlab="ApDRmag")
+
+```
+
+
+
+```{r variable RMag}
+library(ggplot2)
+#install.packages("ggplot2")
+
+plot(glx$Nr, glx$Rmag,
+    ylim=range(c(glx$Rmag-glx$e.Rmag, glx$Rmag+glx$e.Rmag)),
+    pch=19, xlab="Nro Id Galaxia", ylab="Rmag +/- Error_Incertidumbre",
+    main="Grafico barras de Error_Incertidumbre")
+
+# glx_reducido <- glx [1:10, ]
+glx_reducido <- glx
+
+
+plot(glx_reducido$Nr, glx_reducido$Rmag,
+    ylim=range(c(glx_reducido$Rmag-glx_reducido$e.Rmag, glx_reducido$Rmag+glx_reducido$e.Rmag)),
+    pch=19, xlab="Nro Id Galaxia", ylab="Rmag +/- Error_Incertidumbre",
+    main="Grafico barras de Error_Incertidumbre")
+# no tengo bien claro que es esto pero funca
+# hack: we draw arrows but with very special "arrowheads"
+arrows(glx_reducido$Nr, glx_reducido$Rmag-glx_reducido$e.Rmag,glx_reducido$Nr, glx_reducido$Rmag+glx_reducido$e.Rmag, length=0.05, angle=90, code=3)
+
+
+boxplot(glx_reducido$Rmag)
+
+ggplot(glx_reducido, aes( x = Rmag) ) + geom_histogram( aes(y = ..density..), color = "black", fill = "beige")+geom_density( kernel = "epanechnikov", color="red")
+
+index_kill <- which(glx_reducido$Rmag < 20)
+glx_reducido <- glx_reducido[-index_kill, ]
+
+ggplot(glx_reducido, aes( x = Rmag) ) + geom_histogram( aes(y = ..density..), color = "black", fill = "beige")+geom_density( kernel = "epanechnikov", color="red")
+
+
+```
+
+El problema con los histogramas que son los rangos o la cantidad de clases, los cuales son deteminados de forma empírica. Otro inconveniente es el ancho de clase suele ser una variable a tener en consideración. Pero debe hacerse especial hincapie en el rango desde y hasta donde se desea visualizar. 
+En general es preferible los gráficos de densidad de kernel, los cuales son una función continua y pueden someterse a la una derivada.
+
+Realizamos un gráfico simple de densidad de kernel. Son muy recomendables cuando se tienen muchos registros.
+
+```{r Gráficos - II}
+plot (density(glx_reducido$ApDRmag), main="Densidad de kernel")
+```
+
+El boxplot es una nos presenta de manera gráfica el valor de la media, 1er y 3er cuartil y los (supuestos) outliers.
+Pero debe tenerse en consideración que el diagrama de cajas fue pensado para trabajar con datos en los años 70.
+Hoy en día, los grandes volumenes de datos que se manejan hacen más presente la idea de poder tener (supuestos) outliers.
+
+Pasemos a analizar la segunda variable de interés, `ApDRmag`, que representa la diferencia entre la magnitud total y la magnitud de apertura medidas en la banda R. Es un estimador del tamaño de una galaxia. Un valor de cero indica que es una fuente puntual de luz. Los valores negativos se generan por errores de medición.
+
+```{r Gráficos - }
+
+boxplot(glx_reducido$ApDRmag)
+
+ggplot(glx_reducido, aes( x = ApDRmag) ) + geom_histogram( aes(y = ..density..), color = "black", fill = "beige")+geom_density( kernel = "epanechnikov", color="red")
+```
+
+
+como se puede apreciar, la librería ggplot es mas vistosa. La palabra clave "aes" esta relacionada con la estetica, que hace referencia a las variables que se quieren representar.
+Luego +geom_histogram() seria la forma, es decir como represento los datos. El signo + es por la primer capa.
+En este caso la segunda capa esta referida +geom_density() 
+
+Se debe destacar la nomenclatura utilizada: x = ApDRmag en vez de: x = glx$ApDRmag
+De esta forma el creador de la libreria ggplot, Hadley Wickham, es consistente con su filosofía "Tidy data" paper publicado en "The Journal of Statistical Software, vol. 59, 2014"
+
+
+```{r}
+index_kill <- c(which(glx_reducido$ApDRmag < 0), which(glx_reducido$ApDRmag > 2))
+unique (index_kill)
+
+glx_reducido <- glx_reducido[-index_kill, ]
+
+
+ggplot(glx_reducido, aes( x = ApDRmag) ) + geom_histogram( aes(y = ..density..), color = "black", fill = "beige")+geom_density( kernel = "epanechnikov", color="red")
+
+```
+
+## Otros gráficos y técnicas de diagnóstico.
+```{r Gráficos - V}
+
+# install.packages("gridExtra") 
+library(gridExtra)
+p1 <- qplot(BjMAG, S280MAG-BjMAG, data = glx)
+p2 <- qplot(BbMAG, S280MAG-BbMAG, data = glx)
+p3 <- qplot(BbMAG, S280MAG-BbMAG, data = glx)
+grid.arrange(p1, p2, p3, ncol=3)
+
+which.max(glx$BjMAG) 
+#glx[2,1:13]
+glx$BjMAG[2]
+
+p1<-qplot(BjMAG,S280MAG-BjMAG, data = glx_reducido)
+p2 <- qplot(gsMAG,S280MAG-gsMAG, data = glx_reducido)
+p3 <- qplot(BbMAG, S280MAG-BbMAG, data = glx_reducido)
+grid.arrange(p1, p2, p3, ncol=3)
+
+
+
+```
+
+No se consideran outliers que puedan ser eliminados
+
+
+
+```{r Gráficos - VII}
+
+p4<-qplot(UjMAG,S280MAG-UjMAG, data = glx_reducido)
+p5 <-qplot(usMAG,S280MAG-usMAG, data = glx_reducido)
+p6 <- qplot(UbMAG,S280MAG-UbMAG, data = glx_reducido)
+grid.arrange(p4, p5, p6, ncol=3)
+
+which.max(glx_reducido$S280MAG-glx_reducido$UjMAG) 
+which.max(glx_reducido$S280MAG-glx_reducido$usMAG)
+which.min(glx_reducido$UjMAG)
+which.min(glx_reducido$usMAG)
+
+# como saco los cuatro menores de S280MAG-UbMAG
+index_kill <- c (which(abs(glx_reducido$S280MAG-glx_reducido$UjMAG) > 3), which(abs(glx_reducido$S280MAG-glx_reducido$usMAG) > 3),which(abs(glx_reducido$S280MAG-glx_reducido$UbMAG) > 3))
+unique (index_kill)
+
+glx_reducido <- glx_reducido[-index_kill, ]
+
+
+p4<-qplot(UjMAG,S280MAG-UjMAG, data = glx_reducido)
+p5 <-qplot(usMAG,S280MAG-usMAG, data = glx_reducido)
+p6 <- qplot(UbMAG,S280MAG-UbMAG, data = glx_reducido)
+grid.arrange(p4, p5, p6, ncol=3)
+
+
+```
+
+```{r Gráficos - VIII}
+
+p7<-qplot(VjMAG,S280MAG-VjMAG, data = glx_reducido)
+p8 <-qplot(rsMAG,S280MAG-rsMAG, data = glx_reducido)
+p9 <- qplot(VnMAG,S280MAG-VnMAG, data = glx_reducido)
+grid.arrange(p7, p8, p9, ncol=3)
+
+index_kill <- c (which(abs(glx_reducido$S280MAG-glx_reducido$VjMAG) > 3.5), which(abs(glx_reducido$S280MAG-glx_reducido$rsMAG) > 3.5),which(abs(glx_reducido$S280MAG-glx_reducido$VnMAG) > 3.5))
+unique (index_kill)
+
+glx_reducido <- glx_reducido[-index_kill, ]
+
+p7<-qplot(VjMAG,S280MAG-VjMAG, data = glx_reducido)
+p8 <-qplot(rsMAG,S280MAG-rsMAG, data = glx_reducido)
+p9 <- qplot(VnMAG,S280MAG-VnMAG, data = glx_reducido)
+grid.arrange(p7, p8, p9, ncol=3)
+
+which.min(glx_reducido$S280MAG - glx_reducido$rsMAG)
+glx_reducido$S280MAG[which.min(glx_reducido$S280MAG - glx_reducido$rsMAG)] - glx_reducido$rsMAG[which.min(glx_reducido$S280MAG - glx_reducido$rsMAG)]
+
+
+index_kill <- c (which(abs(glx_reducido$S280MAG-glx_reducido$VjMAG) > 3.3), which(abs(glx_reducido$S280MAG-glx_reducido$rsMAG) > 3.2),which(abs(glx_reducido$S280MAG-glx_reducido$VnMAG) > 3.2))
+unique (index_kill)
+
+glx_reducido <- glx_reducido[-index_kill, ]
+
+p7<-qplot(VjMAG,S280MAG-VjMAG, data = glx_reducido)
+p8 <-qplot(rsMAG,S280MAG-rsMAG, data = glx_reducido)
+p9 <- qplot(VnMAG,S280MAG-VnMAG, data = glx_reducido)
+grid.arrange(p7, p8, p9, ncol=3)
+
+
+```
+
+## Tarea 3
+```{r Armamos las matrices de correlaciones - I}
+espectrales <- c(10,12,14,16,18,20,22,24,26,28)
+head( glx_reducido[, espectrales] )
+
+DfMagnitudes <- glx_reducido[, espectrales]
+Cor_DfMagnitudes <- cor(DfMagnitudes)
+
+# mmmm aca parece que me la mande, bien mandada....
+# De los apuntes de clase:
+# Marcelo dice que si haces 
+# # cor(glx[ , espectrales])  
+# te da  una matrix de 
+# correlaciones de todos contra todos, pero en esta matriz hay columnas con
+# NA  y eso es por los NA originales entonces eso se soluciona sacando toda
+# la fila
+# (Nota Leus: El tema es que todos los NA los elimine al ppio cosa que no 
+# me tirase los Warning con los graficos, ademas los saque porque eran pocos
+# e intuia que no deberian estar )
+# Si tenemos una matriz asi:
+#   A   B   C   D
+# 1 N°  N°  N°  N°
+# 2 NA  N°  N°  N°
+# 3 NA  N°  N°  N°
+# 4 NA  N°  N°  N°
+# 5 N°  NA  N°  N°
+# 6 N°  NA  N°  N°
+# 7 N°  N°  N°  N°
+# 8 N°  N°  N°  N°
+# 
+# Otra solucion en vez de borrar las filas con NA en las columnas originales
+# se puede hacer
+# # cor(glx[ , espectrales], use= .....)
+# Si en el use= pones "complete cases" te queda lo mismo que borrando las filas NA
+# y va a ser mas chica que la matriz de origen
+# pero si en el use= pones "pair wise" para la opcion entre AB te quedaría 1,7 y 8
+# sin embardo C y D te quedan todos ES MEJOR (think properly)
+
+# Me parece que lo que hice esta mal porque borre filas con NA al pedo....
+# como encuentro los NA en un dataframe()
+# # apply (matriz, 1 ó 2, anyNA() )
+# # 1 ó 2 -> 1 recorro por fila ; 2 recorro por columna
+# 
+
+# Para crear nuevas variables 
+# # apply(matriz, 2, function(x){sd(x)/mean(x)})
+
+head(DfMagnitudes)
+DfMagnitudesNorm <- DfMagnitudes
+
+DfMagnitudesNorm$UjMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'UjMAG')], 1, function(x) { (x[1]-x[2])} )
+DfMagnitudesNorm$BjMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'BjMAG')], 1, function(x) { (x[1]-x[2])} )
+DfMagnitudesNorm$VjMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'VjMAG')], 1, function(x) { (x[1]-x[2])} )
+
+
+
+DfMagnitudesNorm$usMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'usMAG')], 1, function(x) { (x[1]-x[2])} )
+DfMagnitudesNorm$gsMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'gsMAG')], 1, function(x) { (x[1]-x[2])} )
+DfMagnitudesNorm$rsMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'rsMAG')], 1, function(x) { (x[1]-x[2])} )
+
+
+DfMagnitudesNorm$UbMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'UbMAG')], 1, function(x) { (x[1]-x[2])} )
+DfMagnitudesNorm$BbMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'BbMAG')], 1, function(x) { (x[1]-x[2])} )
+DfMagnitudesNorm$VnMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'VnMAG')], 1, function(x) { (x[1]-x[2])} )
+
+head(DfMagnitudesNorm)
+# estaria muy bueno hacerlo tipo funcion que vaya de 1 a 7 
+# y acada variable lea el nombre le agregue "_Norm"
+
+```
+
+
+## Tarea 4 - Cor con Pairwise  pero con Outliers
+```{r Armamos las matrices de correlaciones - II}
+espectrales <- c(10,12,14,16,18,20,22,24,26,28)
+glx_cc <- glx
+head( glx_cc[, espectrales] )
+
+DfMagnitudes <- glx_cc[, espectrales]
+Cor_DfMagnitudes <- cor(DfMagnitudes, y = NULL, use = "pairwise.complete.obs",  method = "pearson")
+Cor_DfMagnitudes
+
+head(DfMagnitudes)
+DfMagnitudesNorm <- DfMagnitudes
+head(DfMagnitudesNorm)
+
+DfMagnitudesNorm$UjMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'UjMAG')], 1, function(x) { (x[1]-x[2])} )
+DfMagnitudesNorm$BjMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'BjMAG')], 1, function(x) { (x[1]-x[2])} )
+DfMagnitudesNorm$VjMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'VjMAG')], 1, function(x) { (x[1]-x[2])} )
+
+
+
+DfMagnitudesNorm$usMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'usMAG')], 1, function(x) { (x[1]-x[2])} )
+DfMagnitudesNorm$gsMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'gsMAG')], 1, function(x) { (x[1]-x[2])} )
+DfMagnitudesNorm$rsMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'rsMAG')], 1, function(x) { (x[1]-x[2])} )
+
+
+DfMagnitudesNorm$UbMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'UbMAG')], 1, function(x) { (x[1]-x[2])} )
+DfMagnitudesNorm$BbMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'BbMAG')], 1, function(x) { (x[1]-x[2])} )
+DfMagnitudesNorm$VnMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'VnMAG')], 1, function(x) { (x[1]-x[2])} )
+
+head(DfMagnitudesNorm)
+dim(DfMagnitudesNorm)
+which(colnames(DfMagnitudesNorm)=="S280MAG")
+DfMagnitudesNorm <- DfMagnitudesNorm [, 10:19]
+head(DfMagnitudesNorm)
+
+Cor_DfMagnitudesNorm <- cor(DfMagnitudes, y = NULL, use = "pairwise.complete.obs",  method = "pearson")
+Cor_DfMagnitudesNorm
+
+# estaria muy bueno hacerlo tipo funcion que vaya de 1 a 7 
+# y acada variable lea el nombre le agregue "_Norm"
+
+```
+
+```{r Armamos las matrices de correlaciones - III}
+espectrales <- c(10,12,14,16,18,20,22,24,26,28)
+head( glx_reducido[, espectrales] )
+
+DfMagnitudes <- glx_reducido[, espectrales]
+Cor_DfMagnitudes <- cor(DfMagnitudes)
+
+library(ggplot2)
+library(reshape2)
+
+# heatmap de corr sin normalizar
+qplot(x=Var1, y=Var2, data=melt(cor(DfMagnitudes, use="p")), fill=value, geom="tile") +
+   scale_fill_gradient2(limits=c(-1, 1))
+
+# normalizo restando la var S280MAG
+DfMagnitudes_norm <-  DfMagnitudes$S280MAG - DfMagnitudes
+# heatmap de corr sin normalizar
+qplot(x=Var1, y=Var2, data=melt(cor(DfMagnitudes_norm[,1:9], use="p")), fill=value, geom="tile") +
+   scale_fill_gradient2(limits=c(-1, 1))
+```
