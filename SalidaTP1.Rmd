@@ -134,57 +134,62 @@ head (glx$e.W420FE,350)
 ## TAREA 2 y 3 -  
 Realizaremos varios gráficos  explotatorios y trataremos de vizualizar e identificar valores anómalos y valores NA.
 ```{r}
-
-which(is.na(glx$Nr))
-which(is.na(glx$Rmag))
-which(is.na(glx$e.Rmag))
-which(is.na(glx$Mcz))
-
-which(is.na(glx$UjMAG))
-which(is.na(glx$BjMAG))
-which(is.na(glx$VjMAG))
-
-which(is.na(glx$usMAG))
-which(is.na(glx$gsMAG))
-which(is.na(glx$rsMAG))
-
-which(is.na(glx$UbMAG))
-which(is.na(glx$BbMAG))
-which(is.na(glx$VnMAG)) # tiene NA
-
-which(is.na(glx$S280MAG)) # tiene NA
-# which(colnames(glx)=="S280MAG")
+# 
+# which(is.na(glx$Nr))
+# which(is.na(glx$Rmag))
+# which(is.na(glx$e.Rmag))
+# which(is.na(glx$Mcz))
+# 
+# which(is.na(glx$UjMAG))
+# which(is.na(glx$BjMAG))
+# which(is.na(glx$VjMAG))
+# 
+# which(is.na(glx$usMAG))
+# which(is.na(glx$gsMAG))
+# which(is.na(glx$rsMAG))
+# 
+# which(is.na(glx$UbMAG))
+# which(is.na(glx$BbMAG))
+# which(is.na(glx$VnMAG)) # tiene NA
+# 
+# which(is.na(glx$S280MAG)) # tiene NA
+# # which(colnames(glx)=="S280MAG")
 
 ```
 
 ```{r}
-which(is.na(glx$VnMAG)) # tiene NA
-which(is.na(glx$S280MAG)) # tiene NA
-
-indexfilas_NA <- c(which(is.na(glx$VnMAG)), which(is.na(glx$S280MAG)) )
-unique (indexfilas_NA)  
-
-# # como se podria hacer sin revisar todos los valores columna por columna??
-# #  no anda :(
-# index_NA <- c(which(is.na(glx[,1:28])))
-# index_NA  
+# which(is.na(glx$VnMAG)) # tiene NA
+# which(is.na(glx$S280MAG)) # tiene NA
+# 
+# indexfilas_NA <- c(which(is.na(glx$VnMAG)), which(is.na(glx$S280MAG)) )
+# unique (indexfilas_NA)  
+# 
+# # # como se podria hacer sin revisar todos los valores columna por columna??
+# # #  no anda :(
+# # index_NA <- c(which(is.na(glx[,1:28])))
+# # index_NA  
   
 ```
 
 ```{r}
-glx[indexfilas_NA[1], 1]
-glx_reducido <- glx [-(indexfilas_NA),] # esto no esta bueno porque genero una copia de la DATA
-                                      # para archivos grandes no so good
-which(glx_reducido$Nr == glx[indexfilas_NA[1], 1])
+# glx[indexfilas_NA[1], 1]
+# glx_reducido <- glx [-(indexfilas_NA),] # esto no esta bueno porque genero una copia de la DATA
+#                                       # para archivos grandes no so good
+# which(glx_reducido$Nr == glx[indexfilas_NA[1], 1])
 
 ```
 
-```{r}
+```{r variable RMag}
+library(ggplot2)
+#install.packages("ggplot2")
 
 plot(glx$Nr, glx$Rmag,
     ylim=range(c(glx$Rmag-glx$e.Rmag, glx$Rmag+glx$e.Rmag)),
     pch=19, xlab="Nro Id Galaxia", ylab="Rmag +/- Error_Incertidumbre",
     main="Grafico barras de Error_Incertidumbre")
+
+# glx_reducido <- glx [1:10, ]
+glx_reducido <- glx
 
 
 plot(glx_reducido$Nr, glx_reducido$Rmag,
@@ -195,27 +200,18 @@ plot(glx_reducido$Nr, glx_reducido$Rmag,
 # hack: we draw arrows but with very special "arrowheads"
 arrows(glx_reducido$Nr, glx_reducido$Rmag-glx_reducido$e.Rmag,glx_reducido$Nr, glx_reducido$Rmag+glx_reducido$e.Rmag, length=0.05, angle=90, code=3)
 
-warnings()
-# no entiendo el error...
-# 23: In arrows(glx_reducido$Nr, glx_reducido$Rmag - glx_reducido$e.Rmag,  ... :
-#   zero-length arrow is of indeterminate angle and so skipped
-# 24: zero-length arrow is of indeterminate angle and so skipped
+
+boxplot(glx_reducido$Rmag)
+
+ggplot(glx_reducido, aes( x = Rmag) ) + geom_histogram( aes(y = ..density..), color = "black", fill = "beige")+geom_density( kernel = "epanechnikov", color="red")
+
+index_kill <- which(glx_reducido$Rmag < 20)
+glx_reducido <- glx_reducido[-index_kill, ]
+
+ggplot(glx_reducido, aes( x = Rmag) ) + geom_histogram( aes(y = ..density..), color = "black", fill = "beige")+geom_density( kernel = "epanechnikov", color="red")
+
 
 ```
-
-Resulta muy complicado visualizar algo... como podemos saber si hay valores extremos ???
-
-
-Pasemos a analizar la segunda variable ApDRmag
-
-```{r Gráficos - }
-library(ggplot2)
-#install.packages("ggplot2")
-
-hist (glx_reducido$ApDRmag, main= "Histograma de ApDRmag", xlab="ApDRmag")
-
-```
-
 
 El problema con los histogramas que son los rangos o la cantidad de clases, los cuales son deteminados de forma empírica. Otro inconveniente es el ancho de clase suele ser una variable a tener en consideración. Pero debe hacerse especial hincapie en el rango desde y hasta donde se desea visualizar. 
 En general es preferible los gráficos de densidad de kernel, los cuales son una función continua y pueden someterse a la una derivada.
@@ -230,14 +226,15 @@ El boxplot es una nos presenta de manera gráfica el valor de la media, 1er y 3e
 Pero debe tenerse en consideración que el diagrama de cajas fue pensado para trabajar con datos en los años 70.
 Hoy en día, los grandes volumenes de datos que se manejan hacen más presente la idea de poder tener (supuestos) outliers.
 
-```{r Gráficos - III}
+Pasemos a analizar la segunda variable ApDRmag
+
+```{r Gráficos - }
+
 boxplot(glx_reducido$ApDRmag)
-```
 
-
-```{r Gráficos - I}
 ggplot(glx_reducido, aes( x = ApDRmag) ) + geom_histogram( aes(y = ..density..), color = "black", fill = "beige")+geom_density( kernel = "epanechnikov", color="red")
 ```
+
 
 como se puede apreciar, la librería ggplot es mas vistosa. La palabra clave "aes" esta relacionada con la estetica, que hace referencia a las variables que se quieren representar.
 Luego +geom_histogram() seria la forma, es decir como represento los datos. El signo + es por la primer capa.
@@ -247,60 +244,43 @@ Se debe destacar la nomenclatura utilizada: x = ApDRmag en vez de: x = glx$ApDRm
 De esta forma el creador de la libreria ggplot, Hadley Wickham, es consistente con su filosofía "Tidy data" paper publicado en "The Journal of Statistical Software, vol. 59, 2014"
 
 
-
-
 ```{r}
-plot(glx_reducido$Nr, glx_reducido$ApDRmag,
-    pch=19, xlab="Nro Id Galaxia", ylab="ApDRmag",
-    main="Grafico ApDRmag")
+index_kill <- c(which(glx_reducido$ApDRmag < 0), which(glx_reducido$ApDRmag > 2))
+unique (index_kill)
+
+glx_reducido <- glx_reducido[-index_kill, ]
+
+
+ggplot(glx_reducido, aes( x = ApDRmag) ) + geom_histogram( aes(y = ..density..), color = "black", fill = "beige")+geom_density( kernel = "epanechnikov", color="red")
 
 ```
 
-Se procede a eliminar la fila que tieneese punto anomalo
-
-```{r}
-which.min(glx_reducido$ApDRmag) 
-glx_reducido <- glx_reducido[- which.min(glx_reducido$ApDRmag) , ]
-
-
-```
-
-```{r}
-
-plot(glx_reducido$Nr, glx_reducido$Mcz,
-    pch=19, xlab="Nro Id Galaxia", ylab="ApDRmag",
-    main="Grafico Mcz")
-```
 ## Otros gráficos y técnicas de diagnóstico.
 ```{r Gráficos - V}
 
 # install.packages("gridExtra") 
 library(gridExtra)
-# p1 <- qplot(BjMAG, S280MAG-BjMAG, data = glx)
-# p2 <- qplot(BbMAG, S280MAG-BbMAG, data = glx)
-# grid.arrange(p1, p2, ncol=2)
-
-p1 <- qplot(BjMAG, S280MAG-BjMAG, data = glx_reducido)
-p2 <- qplot(BbMAG, S280MAG-BbMAG, data = glx_reducido)
-grid.arrange(p1, p2, ncol=2)
-
+p1 <- qplot(BjMAG, S280MAG-BjMAG, data = glx)
+p2 <- qplot(BbMAG, S280MAG-BbMAG, data = glx)
+p3 <- qplot(BbMAG, S280MAG-BbMAG, data = glx)
+grid.arrange(p1, p2, p3, ncol=3)
 
 which.max(glx$BjMAG) 
 #glx[2,1:13]
 glx$BjMAG[2]
 
-```
-
-Eliminando el outlier y volvemos a graficar
-
-```{r Gráfico - VI}
-glx_reducido <- glx_reducido[- which.max(glx_reducido$BjMAG) , ]
-
 p1<-qplot(BjMAG,S280MAG-BjMAG, data = glx_reducido)
 p2 <- qplot(gsMAG,S280MAG-gsMAG, data = glx_reducido)
 p3 <- qplot(BbMAG, S280MAG-BbMAG, data = glx_reducido)
 grid.arrange(p1, p2, p3, ncol=3)
+
+
+
 ```
+
+No se consideran outliers que puedan ser eliminados
+
+
 
 ```{r Gráficos - VII}
 
@@ -315,13 +295,15 @@ which.min(glx_reducido$UjMAG)
 which.min(glx_reducido$usMAG)
 
 # como saco los cuatro menores de S280MAG-UbMAG
+index_kill <- c (which(abs(glx_reducido$S280MAG-glx_reducido$UjMAG) > 3), which(abs(glx_reducido$S280MAG-glx_reducido$usMAG) > 3),which(abs(glx_reducido$S280MAG-glx_reducido$UbMAG) > 3))
+unique (index_kill)
 
-glx_reducido <- glx_reducido[-c (which.max(glx_reducido$S280MAG-glx_reducido$UjMAG),which.min(glx_reducido$usMAG)), ]
+glx_reducido <- glx_reducido[-index_kill, ]
 
 
 p4<-qplot(UjMAG,S280MAG-UjMAG, data = glx_reducido)
 p5 <-qplot(usMAG,S280MAG-usMAG, data = glx_reducido)
-p6 <- qplot(UbMAG,S280MAG-VnMAG, data = glx_reducido)
+p6 <- qplot(UbMAG,S280MAG-UbMAG, data = glx_reducido)
 grid.arrange(p4, p5, p6, ncol=3)
 
 
@@ -334,7 +316,30 @@ p8 <-qplot(rsMAG,S280MAG-rsMAG, data = glx_reducido)
 p9 <- qplot(VnMAG,S280MAG-VnMAG, data = glx_reducido)
 grid.arrange(p7, p8, p9, ncol=3)
 
-# como saco los cinco menores de S280MAG-VjMAG
+index_kill <- c (which(abs(glx_reducido$S280MAG-glx_reducido$VjMAG) > 3.5), which(abs(glx_reducido$S280MAG-glx_reducido$rsMAG) > 3.5),which(abs(glx_reducido$S280MAG-glx_reducido$VnMAG) > 3.5))
+unique (index_kill)
+
+glx_reducido <- glx_reducido[-index_kill, ]
+
+p7<-qplot(VjMAG,S280MAG-VjMAG, data = glx_reducido)
+p8 <-qplot(rsMAG,S280MAG-rsMAG, data = glx_reducido)
+p9 <- qplot(VnMAG,S280MAG-VnMAG, data = glx_reducido)
+grid.arrange(p7, p8, p9, ncol=3)
+
+which.min(glx_reducido$S280MAG - glx_reducido$rsMAG)
+glx_reducido$S280MAG[which.min(glx_reducido$S280MAG - glx_reducido$rsMAG)] - glx_reducido$rsMAG[which.min(glx_reducido$S280MAG - glx_reducido$rsMAG)]
+
+
+index_kill <- c (which(abs(glx_reducido$S280MAG-glx_reducido$VjMAG) > 3.3), which(abs(glx_reducido$S280MAG-glx_reducido$rsMAG) > 3.2),which(abs(glx_reducido$S280MAG-glx_reducido$VnMAG) > 3.2))
+unique (index_kill)
+
+glx_reducido <- glx_reducido[-index_kill, ]
+
+p7<-qplot(VjMAG,S280MAG-VjMAG, data = glx_reducido)
+p8 <-qplot(rsMAG,S280MAG-rsMAG, data = glx_reducido)
+p9 <- qplot(VnMAG,S280MAG-VnMAG, data = glx_reducido)
+grid.arrange(p7, p8, p9, ncol=3)
+
 
 ```
 
