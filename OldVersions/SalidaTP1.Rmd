@@ -1,8 +1,13 @@
 ---
-title: "Trabajo Práctico 1 - Parte 1 - WELCOME LICENCIADA v2"
-author: "Freiman <sebafreiman@gmail.com>, Louzau <eplouz@gmail.com>, Michalla <barbaramichalla@gmail.com>, Ríos <rios.leandromartin@gmail.com>"
+title: 'DataMining en Ciencias. Trabajo Práctico 1: Procesamiento de los datos'
+author: Freiman Sebastián <sebafreiman@gmail.com>, Louzau Estefanía <eplouz@gmail.com>,
+  Michalla Bárbara <barbaramichalla@gmail.com>, Ríos Leandro Martín <rios.leandromartin@gmail.com>
 date: "13 de septiembre de 2016"
-output: html_document
+output:
+  html_document:
+    toc: yes
+  pdf_document:
+    toc: yes
 ---
 
 ```{r setup, include=FALSE}
@@ -416,7 +421,7 @@ head(DfMagnitudesNorm)
 
 
 ## Tarea 4 - Cor con Pairwise  pero con Outliers
-```{r Armamos las matrices de correlaciones - I}
+```{r Armamos las matrices de correlaciones - II}
 espectrales <- c(10,12,14,16,18,20,22,24,26,28)
 glx_cc <- glx
 head( glx_cc[, espectrales] )
@@ -458,3 +463,23 @@ Cor_DfMagnitudesNorm
 
 ```
 
+```{r Armamos las matrices de correlaciones - III}
+espectrales <- c(10,12,14,16,18,20,22,24,26,28)
+head( glx_reducido[, espectrales] )
+
+DfMagnitudes <- glx_reducido[, espectrales]
+Cor_DfMagnitudes <- cor(DfMagnitudes)
+
+library(ggplot2)
+library(reshape2)
+
+# heatmap de corr sin normalizar
+qplot(x=Var1, y=Var2, data=melt(cor(DfMagnitudes, use="p")), fill=value, geom="tile") +
+   scale_fill_gradient2(limits=c(-1, 1))
+
+# normalizo restando la var S280MAG
+DfMagnitudes_norm <-  DfMagnitudes$S280MAG - DfMagnitudes
+# heatmap de corr sin normalizar
+qplot(x=Var1, y=Var2, data=melt(cor(DfMagnitudes_norm[,1:9], use="p")), fill=value, geom="tile") +
+   scale_fill_gradient2(limits=c(-1, 1))
+```

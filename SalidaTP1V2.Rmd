@@ -10,11 +10,13 @@ output:
     toc: yes
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+```{r setup, include=FALSE,}
+knitr::opts_chunk$set(echo = FALSE, message=F, warning=F)
 ```
 
-El objetivo de esta primera parte del trabajo práctico es conocer los datos con que van a trabajar, realizar un análisis exploratorio y detectar y solucionar varios problemas que presentan los datos.
+## Introducción
+
+El objetivo de esta primera parte del trabajo práctico es conocer los datos con que van a trabajar, realizar un análisis exploratorio y detectar y solucionar varios problemas que presentan los datos, para poder, en sucesivos trabajos, operarlos adecuadamente.
 
 El trabajo realizado se organiza en las siguientes secciones.
 
@@ -154,125 +156,133 @@ str(glx$e.W420FE)
 table(is.na(glx$e.W420FE))
 ```
 
-## Tratamiento de Datos Faltantes
-
-Con el objetivo de identificar la presencia de valores extremos o datos faltantes, se realizan controles mediante la observación de tablas y gráficos exploratorios que ayuden a vizualizarlos.
-
-En primer lugar se verifica la presencia de datos faltantes en cualquiera de las variables del dataset.
-
-El resultado indica que hay datos faltantes en 50 registros y que los mismos se distribuyen en 4 variables:
-
-```{r}
-table(is.na(glx))
-
-colnames(glx)[apply(glx,2,anyNA)]
-
-indexfilas_NA <- as.numeric(rownames(glx[rowSums(is.na(glx)) > 0,]))
-```
-
-El equipo considera que la cantidad de casos con datos faltantes es despreciable, por lo que se procede a eliminar dichas observaciones para asegurar que se trabajará con datos completos y sin rellenar.
-
-Se comprueba que luego de retirados dichos casos, el dataset obtenido ya no posee datos faltantes:
-
-```{r}
-glx_reducido <- glx[-(indexfilas_NA),] 
-
-table(is.na(glx_reducido))
-
-```
 
 ## Tratamiento de Outliers
 
+Con el objetivo de identificar la presencia de valores extremos, se realizan controles mediante la observación de tablas y gráficos exploratorios que ayuden a vizualizarlos.
+
+**RMag** 
+
 Se comienza analizando las variables `Rmag` y `e.Rmag`, que representan la magnitud total en la banda R y su error de medición. 
 
-
-```{r Gráficos }
-library(ggplot2)
-#install.packages("ggplot2")
-
-hist (glx_reducido$ApDRmag, main= "Histograma de ApDRmag", xlab="ApDRmag")
-
-```
-
-
+Se analiza la variable `Rmag` por medio de un histograma y un gráfico de barras de error de `e.Rmag`.
 
 ```{r variable RMag}
 library(ggplot2)
 #install.packages("ggplot2")
 
-plot(glx$Nr, glx$Rmag,
-    ylim=range(c(glx$Rmag-glx$e.Rmag, glx$Rmag+glx$e.Rmag)),
+# glx_SinOutliers <- glx [1:10, ]
+glx_SinOutliers <- glx
+
+hist (glx_SinOutliers$Rmag, main= "Histograma de Rmag", xlab="Rmag")
+```
+
+Uno de los problemas observados al estudiar los histogramas son los rangos o la cantidad de clases de la variable, los cuales son deteminados de forma empírica. Otro inconveniente es que el ancho de clase debe tenerse en consideración para distribuir las observaciones. Pero debe hacerse especial hincapié en el rango desde y hasta dónde se desea visualizar. 
+
+En oposición a los anteriores, suelen ser preferibles los gráficos de densidad de kernel, los cuales son una función continua y pueden someterse a una derivada. Además, son muy recomendables cuando se tienen muchos registros.
+
+Por lo tanto, realizamos un gráfico simple de densidad de kernel.
+
+```{r Gráficos - II}
+plot (density(glx_SinOutliers$ApDRmag), main="Densidad de kernel")
+```
+
+Adicionalmente, se grafica un gráfico de barras de error, a través del cual se espera tener una mejor visualización de los datos.
+
+```{r}
+
+plot(glx_SinOutliers$Nr, glx_SinOutliers$Rmag,
+    ylim=range(c(glx_SinOutliers$Rmag-glx_SinOutliers$e.Rmag, glx_SinOutliers$Rmag+glx_SinOutliers$e.Rmag)),
     pch=19, xlab="Nro Id Galaxia", ylab="Rmag +/- Error_Incertidumbre",
     main="Grafico barras de Error_Incertidumbre")
 
-# glx_reducido <- glx [1:10, ]
-glx_reducido <- glx
+# no tengo bien claro que es esto pero funca
+# hack: we draw arrows but with very special "arrowheads"
+arrows(glx_SinOutliers$Nr, glx_SinOutliers$Rmag-glx_SinOutliers$e.Rmag,glx_SinOutliers$Nr, glx_SinOutliers$Rmag+glx_SinOutliers$e.Rmag, length=0.05, angle=90, code=3)
 
+```
 
-plot(glx_reducido$Nr, glx_reducido$Rmag,
-    ylim=range(c(glx_reducido$Rmag-glx_reducido$e.Rmag, glx_reducido$Rmag+glx_reducido$e.Rmag)),
+Dada la gran cantidad de registros, es díficil visualizar el comportamiento de los mismos.
+Se procede a realizar el mismo gráficos pero tomado una muestra al azar de 100 registros.
+
+```{r}
+
+glx_errorbars <- glx_SinOutliers[sample (c(1:dim(glx_SinOutliers)[1]),100), ]
+
+plot(glx_errorbars$Nr, glx_errorbars$Rmag, ylim=range(c(glx_errorbars$Rmag-glx_errorbars$e.Rmag, glx_errorbars$Rmag+glx_errorbars$e.Rmag)),
     pch=19, xlab="Nro Id Galaxia", ylab="Rmag +/- Error_Incertidumbre",
     main="Grafico barras de Error_Incertidumbre")
 # no tengo bien claro que es esto pero funca
 # hack: we draw arrows but with very special "arrowheads"
-arrows(glx_reducido$Nr, glx_reducido$Rmag-glx_reducido$e.Rmag,glx_reducido$Nr, glx_reducido$Rmag+glx_reducido$e.Rmag, length=0.05, angle=90, code=3)
-
-
-boxplot(glx_reducido$Rmag)
-
-ggplot(glx_reducido, aes( x = Rmag) ) + geom_histogram( aes(y = ..density..), color = "black", fill = "beige")+geom_density( kernel = "epanechnikov", color="red")
-
-index_kill <- which(glx_reducido$Rmag < 20)
-glx_reducido <- glx_reducido[-index_kill, ]
-
-ggplot(glx_reducido, aes( x = Rmag) ) + geom_histogram( aes(y = ..density..), color = "black", fill = "beige")+geom_density( kernel = "epanechnikov", color="red")
-
+arrows(glx_errorbars$Nr, glx_errorbars$Rmag-glx_errorbars$e.Rmag,glx_errorbars$Nr, glx_errorbars$Rmag+glx_errorbars$e.Rmag, length=0.05, angle=90, code=3)
 
 ```
 
-El problema con los histogramas que son los rangos o la cantidad de clases, los cuales son deteminados de forma empírica. Otro inconveniente es el ancho de clase suele ser una variable a tener en consideración. Pero debe hacerse especial hincapie en el rango desde y hasta donde se desea visualizar. 
-En general es preferible los gráficos de densidad de kernel, los cuales son una función continua y pueden someterse a la una derivada.
 
-Realizamos un gráfico simple de densidad de kernel. Son muy recomendables cuando se tienen muchos registros.
+A partir de los gráficos expuestos se puede suponer la presencia de outliers.
 
-```{r Gráficos - II}
-plot (density(glx_reducido$ApDRmag), main="Densidad de kernel")
+Luego, se presenta un gráfico tipo boxplot para visualizar la distribución de la variable.
+
+```{r}
+
+boxplot(glx_SinOutliers$Rmag)
+
+#ggplot(glx_SinOutliers, aes( x = Rmag) ) + geom_histogram( aes(y = ..density..), color = "black", fill = "beige")+geom_density( kernel = "epanechnikov", color="red")
 ```
 
-El boxplot es una nos presenta de manera gráfica el valor de la media, 1er y 3er cuartil y los (supuestos) outliers.
-Pero debe tenerse en consideración que el diagrama de cajas fue pensado para trabajar con datos en los años 70.
+El boxplot presenta de manera gráfica el valor de la media, 1er y 3er cuartil y los (supuestos) outliers. Pero debe tenerse en consideración que el diagrama de cajas fue pensado para trabajar con datos en los años 70.
 Hoy en día, los grandes volumenes de datos que se manejan hacen más presente la idea de poder tener (supuestos) outliers.
+
+Sin embargo, a partir de las observaciones realizadas con todo el análisis anterior, se determina que los valores extremos para la variable en estudio podrían ser aquellos mayores o iguales a 20.
+
+Por lo tanto, se procede a quitar las observaciones que toman valores en este rango y se vuelve a generar un gráfico de barras que muestra la distribución de la variable sin valores extremos.
+
+```{r}
+index_kill <- which(glx_SinOutliers$Rmag < 20)
+glx_SinOutliers <- glx_SinOutliers[-index_kill, ]
+
+ggplot(glx_SinOutliers, aes( x = Rmag) ) + geom_histogram( aes(y = ..density..), color = "black", fill = "beige")+geom_density( kernel = "epanechnikov", color="red")
+
+```
+
+**ApDRMag**
 
 Pasemos a analizar la segunda variable de interés, `ApDRmag`, que representa la diferencia entre la magnitud total y la magnitud de apertura medidas en la banda R. Es un estimador del tamaño de una galaxia. Un valor de cero indica que es una fuente puntual de luz. Los valores negativos se generan por errores de medición.
 
+Se grafica mediante un boxplot y un histograma:
+
 ```{r Gráficos - }
 
-boxplot(glx_reducido$ApDRmag)
-
-ggplot(glx_reducido, aes( x = ApDRmag) ) + geom_histogram( aes(y = ..density..), color = "black", fill = "beige")+geom_density( kernel = "epanechnikov", color="red")
+boxplot(glx_SinOutliers$ApDRmag)
 ```
 
+El histograma se crea con la librería `ggplot`[^1]
 
-como se puede apreciar, la librería ggplot es mas vistosa. La palabra clave "aes" esta relacionada con la estetica, que hace referencia a las variables que se quieren representar.
-Luego +geom_histogram() seria la forma, es decir como represento los datos. El signo + es por la primer capa.
-En este caso la segunda capa esta referida +geom_density() 
+```{r}
+ggplot(glx_SinOutliers, aes( x = ApDRmag) ) + geom_histogram( aes(y = ..density..), color = "black", fill = "beige")+geom_density( kernel = "epanechnikov", color="red")
+```
 
-Se debe destacar la nomenclatura utilizada: x = ApDRmag en vez de: x = glx$ApDRmag
-De esta forma el creador de la libreria ggplot, Hadley Wickham, es consistente con su filosofía "Tidy data" paper publicado en "The Journal of Statistical Software, vol. 59, 2014"
+[1] Como se puede apreciar, la librería ggplot es mas vistosa para realizar gráficos. Los parámetros de "aes" están relacionados con la estética por _aesthetics_, de las variables que se quieren representar.
+Luego `+ geom_histogram()` propone la forma en la que se representan los datos. Los signos `+` permiten generar los gráficos en capas; en este caso la segunda capa esta referida `+ geom_density()`
+Cabe también destacar que la nomenclatura utilizada: `x = ApDRmag` en vez de: `x = glx$ApDRmag`
+es consistente con la filosofía "Tidy Data" de su creador, Hadley Wickham, que menciona en su paper publicado en "The Journal of Statistical Software, vol. 59, 2014"
 
 
 ```{r}
-index_kill <- c(which(glx_reducido$ApDRmag < 0), which(glx_reducido$ApDRmag > 2))
-unique (index_kill)
+index_kill <- c(which(glx_SinOutliers$ApDRmag < 0), which(glx_SinOutliers$ApDRmag > 2))
+#unique (index_kill)
 
-glx_reducido <- glx_reducido[-index_kill, ]
+glx_SinOutliers <- glx_SinOutliers[-index_kill, ]
 
 
-ggplot(glx_reducido, aes( x = ApDRmag) ) + geom_histogram( aes(y = ..density..), color = "black", fill = "beige")+geom_density( kernel = "epanechnikov", color="red")
+ggplot(glx_SinOutliers, aes( x = ApDRmag) ) + geom_histogram( aes(y = ..density..), color = "black", fill = "beige")+geom_density( kernel = "epanechnikov", color="red")
 
 ```
 
-## Otros gráficos y técnicas de diagnóstico.
+## Otros gráficos y técnicas de diagnóstico complementarias
+
+Para el análisis de los datos de las bandas espectrales, se realizarán scatter graphs donde la abcisa será la banda espectral de casa sistema fotométrico y la ordenada estará normalizada respecto de la magnitud absoluta en el ultravioleta a 280 nm `S280MAG`. La normalización se hace restando porque estas variables son logarítmicas.
+
 ```{r Gráficos - V}
 
 # install.packages("gridExtra") 
@@ -281,193 +291,161 @@ p1 <- qplot(BjMAG, S280MAG-BjMAG, data = glx)
 p2 <- qplot(BbMAG, S280MAG-BbMAG, data = glx)
 p3 <- qplot(BbMAG, S280MAG-BbMAG, data = glx)
 grid.arrange(p1, p2, p3, ncol=3)
+```
 
+Es fácil apreciar que existe un valos en `BjMAG` muy alejado de la nube de puntos. Procedemos a eliminarlo.
+
+```{r Gráficos - Vb}
 which.max(glx$BjMAG) 
 #glx[2,1:13]
 glx$BjMAG[2]
 
-p1<-qplot(BjMAG,S280MAG-BjMAG, data = glx_reducido)
-p2 <- qplot(gsMAG,S280MAG-gsMAG, data = glx_reducido)
-p3 <- qplot(BbMAG, S280MAG-BbMAG, data = glx_reducido)
+p1<-qplot(BjMAG,S280MAG-BjMAG, data = glx_SinOutliers)
+p2 <- qplot(gsMAG,S280MAG-gsMAG, data = glx_SinOutliers)
+p3 <- qplot(BbMAG, S280MAG-BbMAG, data = glx_SinOutliers)
 grid.arrange(p1, p2, p3, ncol=3)
-
-
 
 ```
 
-No se consideran outliers que puedan ser eliminados
+Luego de la remoción, los tres gráficos presentan la similitud esperada en la distribución.
 
-
+Bajo la misma técnica se analizan las otras bandas espectrales.
 
 ```{r Gráficos - VII}
 
-p4<-qplot(UjMAG,S280MAG-UjMAG, data = glx_reducido)
-p5 <-qplot(usMAG,S280MAG-usMAG, data = glx_reducido)
-p6 <- qplot(UbMAG,S280MAG-UbMAG, data = glx_reducido)
+p4<-qplot(UjMAG,S280MAG-UjMAG, data = glx_SinOutliers)
+p5 <-qplot(usMAG,S280MAG-usMAG, data = glx_SinOutliers)
+p6 <- qplot(UbMAG,S280MAG-UbMAG, data = glx_SinOutliers)
 grid.arrange(p4, p5, p6, ncol=3)
+```
 
-which.max(glx_reducido$S280MAG-glx_reducido$UjMAG) 
-which.max(glx_reducido$S280MAG-glx_reducido$usMAG)
-which.min(glx_reducido$UjMAG)
-which.min(glx_reducido$usMAG)
+Se procede a elimimar los puntos anómalos. En este caso se tomó el criterio que las bandas normalizadas se deben encontrar dentro del intervalo [-3;+3]
+
+```{r Gráficos - VIIb}
+which.max(glx_SinOutliers$S280MAG-glx_SinOutliers$UjMAG) 
+which.max(glx_SinOutliers$S280MAG-glx_SinOutliers$usMAG)
+which.min(glx_SinOutliers$UjMAG)
+which.min(glx_SinOutliers$usMAG)
 
 # como saco los cuatro menores de S280MAG-UbMAG
-index_kill <- c (which(abs(glx_reducido$S280MAG-glx_reducido$UjMAG) > 3), which(abs(glx_reducido$S280MAG-glx_reducido$usMAG) > 3),which(abs(glx_reducido$S280MAG-glx_reducido$UbMAG) > 3))
+index_kill <- c (which(abs(glx_SinOutliers$S280MAG-glx_SinOutliers$UjMAG) > 3), which(abs(glx_SinOutliers$S280MAG-glx_SinOutliers$usMAG) > 3),which(abs(glx_SinOutliers$S280MAG-glx_SinOutliers$UbMAG) > 3))
 unique (index_kill)
 
-glx_reducido <- glx_reducido[-index_kill, ]
+glx_SinOutliers <- glx_SinOutliers[-index_kill, ]
 
 
-p4<-qplot(UjMAG,S280MAG-UjMAG, data = glx_reducido)
-p5 <-qplot(usMAG,S280MAG-usMAG, data = glx_reducido)
-p6 <- qplot(UbMAG,S280MAG-UbMAG, data = glx_reducido)
+p4<-qplot(UjMAG,S280MAG-UjMAG, data = glx_SinOutliers)
+p5 <-qplot(usMAG,S280MAG-usMAG, data = glx_SinOutliers)
+p6 <- qplot(UbMAG,S280MAG-UbMAG, data = glx_SinOutliers)
 grid.arrange(p4, p5, p6, ncol=3)
 
 
 ```
+
+Se vuelve a generar el gráfico y por inspección visual se eliminan los puntos anómalos.
 
 ```{r Gráficos - VIII}
 
-p7<-qplot(VjMAG,S280MAG-VjMAG, data = glx_reducido)
-p8 <-qplot(rsMAG,S280MAG-rsMAG, data = glx_reducido)
-p9 <- qplot(VnMAG,S280MAG-VnMAG, data = glx_reducido)
+p7<-qplot(VjMAG,S280MAG-VjMAG, data = glx_SinOutliers)
+p8 <-qplot(rsMAG,S280MAG-rsMAG, data = glx_SinOutliers)
+p9 <- qplot(VnMAG,S280MAG-VnMAG, data = glx_SinOutliers)
 grid.arrange(p7, p8, p9, ncol=3)
 
-index_kill <- c (which(abs(glx_reducido$S280MAG-glx_reducido$VjMAG) > 3.5), which(abs(glx_reducido$S280MAG-glx_reducido$rsMAG) > 3.5),which(abs(glx_reducido$S280MAG-glx_reducido$VnMAG) > 3.5))
+index_kill <- c (which(abs(glx_SinOutliers$S280MAG-glx_SinOutliers$VjMAG) > 3.5), which(abs(glx_SinOutliers$S280MAG-glx_SinOutliers$rsMAG) > 3.5),which(abs(glx_SinOutliers$S280MAG-glx_SinOutliers$VnMAG) > 3.5))
 unique (index_kill)
 
-glx_reducido <- glx_reducido[-index_kill, ]
+glx_SinOutliers <- glx_SinOutliers[-index_kill, ]
 
-p7<-qplot(VjMAG,S280MAG-VjMAG, data = glx_reducido)
-p8 <-qplot(rsMAG,S280MAG-rsMAG, data = glx_reducido)
-p9 <- qplot(VnMAG,S280MAG-VnMAG, data = glx_reducido)
+p7<-qplot(VjMAG,S280MAG-VjMAG, data = glx_SinOutliers)
+p8 <-qplot(rsMAG,S280MAG-rsMAG, data = glx_SinOutliers)
+p9 <- qplot(VnMAG,S280MAG-VnMAG, data = glx_SinOutliers)
 grid.arrange(p7, p8, p9, ncol=3)
 
-which.min(glx_reducido$S280MAG - glx_reducido$rsMAG)
-glx_reducido$S280MAG[which.min(glx_reducido$S280MAG - glx_reducido$rsMAG)] - glx_reducido$rsMAG[which.min(glx_reducido$S280MAG - glx_reducido$rsMAG)]
+which.min(glx_SinOutliers$S280MAG - glx_SinOutliers$rsMAG)
+glx_SinOutliers$S280MAG[which.min(glx_SinOutliers$S280MAG - glx_SinOutliers$rsMAG)] - glx_SinOutliers$rsMAG[which.min(glx_SinOutliers$S280MAG - glx_SinOutliers$rsMAG)]
 
 
-index_kill <- c (which(abs(glx_reducido$S280MAG-glx_reducido$VjMAG) > 3.3), which(abs(glx_reducido$S280MAG-glx_reducido$rsMAG) > 3.2),which(abs(glx_reducido$S280MAG-glx_reducido$VnMAG) > 3.2))
+index_kill <- c (which(abs(glx_SinOutliers$S280MAG-glx_SinOutliers$VjMAG) > 3.3), which(abs(glx_SinOutliers$S280MAG-glx_SinOutliers$rsMAG) > 3.2),which(abs(glx_SinOutliers$S280MAG-glx_SinOutliers$VnMAG) > 3.2))
 unique (index_kill)
 
-glx_reducido <- glx_reducido[-index_kill, ]
-
-p7<-qplot(VjMAG,S280MAG-VjMAG, data = glx_reducido)
-p8 <-qplot(rsMAG,S280MAG-rsMAG, data = glx_reducido)
-p9 <- qplot(VnMAG,S280MAG-VnMAG, data = glx_reducido)
-grid.arrange(p7, p8, p9, ncol=3)
-
+glx_SinOutliers <- glx_SinOutliers[-index_kill, ]
 
 ```
 
-## Tarea 3
-```{r Armamos las matrices de correlaciones - I}
-espectrales <- c(10,12,14,16,18,20,22,24,26,28)
-head( glx_reducido[, espectrales] )
+Finalmente se llega a distribuciones de puntos similares para los distintos sistemas fotométricos en las distintas bandas espectrales.
 
-DfMagnitudes <- glx_reducido[, espectrales]
-Cor_DfMagnitudes <- cor(DfMagnitudes)
+```{r Gráficos - VIIIb}
 
-# mmmm aca parece que me la mande, bien mandada....
-# De los apuntes de clase:
-# Marcelo dice que si haces 
-# # cor(glx[ , espectrales])  
-# te da  una matrix de 
-# correlaciones de todos contra todos, pero en esta matriz hay columnas con
-# NA  y eso es por los NA originales entonces eso se soluciona sacando toda
-# la fila
-# (Nota Leus: El tema es que todos los NA los elimine al ppio cosa que no 
-# me tirase los Warning con los graficos, ademas los saque porque eran pocos
-# e intuia que no deberian estar )
-# Si tenemos una matriz asi:
-#   A   B   C   D
-# 1 N°  N°  N°  N°
-# 2 NA  N°  N°  N°
-# 3 NA  N°  N°  N°
-# 4 NA  N°  N°  N°
-# 5 N°  NA  N°  N°
-# 6 N°  NA  N°  N°
-# 7 N°  N°  N°  N°
-# 8 N°  N°  N°  N°
-# 
-# Otra solucion en vez de borrar las filas con NA en las columnas originales
-# se puede hacer
-# # cor(glx[ , espectrales], use= .....)
-# Si en el use= pones "complete cases" te queda lo mismo que borrando las filas NA
-# y va a ser mas chica que la matriz de origen
-# pero si en el use= pones "pair wise" para la opcion entre AB te quedaría 1,7 y 8
-# sin embardo C y D te quedan todos ES MEJOR (think properly)
+p7<-qplot(VjMAG,S280MAG-VjMAG, data = glx_SinOutliers)
+p8 <-qplot(rsMAG,S280MAG-rsMAG, data = glx_SinOutliers)
+p9 <- qplot(VnMAG,S280MAG-VnMAG, data = glx_SinOutliers)
+grid.arrange(p7, p8, p9, ncol=3)
 
-# Me parece que lo que hice esta mal porque borre filas con NA al pedo....
-# como encuentro los NA en un dataframe()
-# # apply (matriz, 1 ó 2, anyNA() )
-# # 1 ó 2 -> 1 recorro por fila ; 2 recorro por columna
-# 
+```
 
-# Para crear nuevas variables 
-# # apply(matriz, 2, function(x){sd(x)/mean(x)})
+## Tratamiento de Datos Faltantes
 
-head(DfMagnitudes)
-DfMagnitudesNorm <- DfMagnitudes
+Se verifica la presencia de datos faltantes en cualquiera de las variables del dataset.
 
-DfMagnitudesNorm$UjMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'UjMAG')], 1, function(x) { (x[1]-x[2])} )
-DfMagnitudesNorm$BjMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'BjMAG')], 1, function(x) { (x[1]-x[2])} )
-DfMagnitudesNorm$VjMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'VjMAG')], 1, function(x) { (x[1]-x[2])} )
+El resultado indica que hay datos faltantes en 50 registros y que los mismos se distribuyen en 4 variables, como sigue:
 
+```{r}
+glx_SinOutliersNas <- glx_SinOutliers
 
+table(is.na(glx_SinOutliers))
 
-DfMagnitudesNorm$usMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'usMAG')], 1, function(x) { (x[1]-x[2])} )
-DfMagnitudesNorm$gsMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'gsMAG')], 1, function(x) { (x[1]-x[2])} )
-DfMagnitudesNorm$rsMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'rsMAG')], 1, function(x) { (x[1]-x[2])} )
+colnames(glx_SinOutliers)[apply(glx_SinOutliers,2,anyNA)]
 
+indexfilas_NA <- as.numeric(rownames(glx_SinOutliers[rowSums(is.na(glx_SinOutliers)) > 0,]))
+```
 
-DfMagnitudesNorm$UbMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'UbMAG')], 1, function(x) { (x[1]-x[2])} )
-DfMagnitudesNorm$BbMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'BbMAG')], 1, function(x) { (x[1]-x[2])} )
-DfMagnitudesNorm$VnMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'VnMAG')], 1, function(x) { (x[1]-x[2])} )
+El equipo considera que la cantidad de casos con datos faltantes es despreciable, por lo que se procede a eliminar dichas observaciones para asegurar que se trabajará con datos completos y sin rellenar.
 
-head(DfMagnitudesNorm)
-# estaria muy bueno hacerlo tipo funcion que vaya de 1 a 7 
-# y acada variable lea el nombre le agregue "_Norm"
+Se comprueba que luego de retirados dichos casos, el dataset obtenido ya no posee datos faltantes:
+
+```{r}
+glx_SinOutliersNas <- glx_SinOutliers[-(indexfilas_NA),] 
+
+table(is.na(glx_SinOutliersNas))
 
 ```
 
 
-## Tarea 4 - Cor con Pairwise  pero con Outliers
+## Correlación entre variables
+
+A continuación se realiza el análisis de correlación utilizando únicamente las variables que representan las bandas espectrales de las galaxias para diferentes sistemas de fotometría.
+Para ello, se combinan diferentes versiones del dataset para comprender su impacto en el estudio de la correlación.
+
+En primer lugar, se muestra la matriz de correlación para los datos con valores nulos (NAs)
+
 ```{r Armamos las matrices de correlaciones - II}
 espectrales <- c(10,12,14,16,18,20,22,24,26,28)
-glx_cc <- glx
-head( glx_cc[, espectrales] )
 
-DfMagnitudes <- glx_cc[, espectrales]
+#head( glx_SinOutliers[, espectrales] )
+
+DfMagnitudes <- glx_SinOutliers[, espectrales]
+
+Cor_DfMagnitudes <- cor(DfMagnitudes, y = NULL, use = "everything",  method = "pearson")
+Cor_DfMagnitudes
+#esto esta bueno mostrar que la correlacion te queda con NAs
+# y se mejora con el pairwise
+# dale porfis mostremoslo  :) te pusiste chinchuda por el NA o por el cambio de clase
+```
+
+Luego se recalcula la matriz de correlación pero esta vez quitando los valores nulos mediante la técnica _pairwise_, que alternará entre filas y columnas retirando aquellas que en cada variable presenten valores nulos.
+
+```{r}
 Cor_DfMagnitudes <- cor(DfMagnitudes, y = NULL, use = "pairwise.complete.obs",  method = "pearson")
 Cor_DfMagnitudes
+```
 
-head(DfMagnitudes)
-DfMagnitudesNorm <- DfMagnitudes
-head(DfMagnitudesNorm)
+Finalmente, se muestra la misma matriz pero para los datos normalizados restando la variable `S280Mag`
 
-DfMagnitudesNorm$UjMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'UjMAG')], 1, function(x) { (x[1]-x[2])} )
-DfMagnitudesNorm$BjMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'BjMAG')], 1, function(x) { (x[1]-x[2])} )
-DfMagnitudesNorm$VjMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'VjMAG')], 1, function(x) { (x[1]-x[2])} )
+```{r}
+# normalizo restando la var S280MAG
+DfMagnitudesNorm <-  DfMagnitudes$S280MAG - DfMagnitudes
 
-
-
-DfMagnitudesNorm$usMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'usMAG')], 1, function(x) { (x[1]-x[2])} )
-DfMagnitudesNorm$gsMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'gsMAG')], 1, function(x) { (x[1]-x[2])} )
-DfMagnitudesNorm$rsMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'rsMAG')], 1, function(x) { (x[1]-x[2])} )
-
-
-DfMagnitudesNorm$UbMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'UbMAG')], 1, function(x) { (x[1]-x[2])} )
-DfMagnitudesNorm$BbMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'BbMAG')], 1, function(x) { (x[1]-x[2])} )
-DfMagnitudesNorm$VnMAG_Norm <- apply(DfMagnitudes[,c('S280MAG', 'VnMAG')], 1, function(x) { (x[1]-x[2])} )
-
-head(DfMagnitudesNorm)
-dim(DfMagnitudesNorm)
-which(colnames(DfMagnitudesNorm)=="S280MAG")
-DfMagnitudesNorm <- DfMagnitudesNorm [, 10:19]
-head(DfMagnitudesNorm)
-
-Cor_DfMagnitudesNorm <- cor(DfMagnitudes, y = NULL, use = "pairwise.complete.obs",  method = "pearson")
+Cor_DfMagnitudesNorm <- cor(DfMagnitudesNorm, y = NULL, use = "pairwise.complete.obs",  method = "pearson")
 Cor_DfMagnitudesNorm
 
 # estaria muy bueno hacerlo tipo funcion que vaya de 1 a 7 
@@ -475,23 +453,21 @@ Cor_DfMagnitudesNorm
 
 ```
 
-```{r Armamos las matrices de correlaciones - III}
-espectrales <- c(10,12,14,16,18,20,22,24,26,28)
-head( glx_reducido[, espectrales] )
+Luego, se presentan los gráficos tipo _heatmap_ para las matrices sin normalizar y normalizadas, a modo de ofrecer una comparativa visual del efecto de la última por sobre los resultados obtenidos en la anterior.
 
-DfMagnitudes <- glx_reducido[, espectrales]
-Cor_DfMagnitudes <- cor(DfMagnitudes)
+```{r Armamos las matrices de correlaciones - III}
 
 library(ggplot2)
 library(reshape2)
 
 # heatmap de corr sin normalizar
-qplot(x=Var1, y=Var2, data=melt(cor(DfMagnitudes, use="p")), fill=value, geom="tile") +
-   scale_fill_gradient2(limits=c(-1, 1))
+qplot(x=Var1, y=Var2, data=melt(cor(DfMagnitudes, use="p")), fill=value, geom="tile", main="Correlograma con datos sin normalizar") +
+   scale_fill_gradient2(limits=c(-1, 1)) 
 
-# normalizo restando la var S280MAG
-DfMagnitudes_norm <-  DfMagnitudes$S280MAG - DfMagnitudes
+
 # heatmap de corr sin normalizar
-qplot(x=Var1, y=Var2, data=melt(cor(DfMagnitudes_norm[,1:9], use="p")), fill=value, geom="tile") +
+qplot(x=Var1, y=Var2, data=melt(cor(DfMagnitudesNorm[,1:9], use="p")), fill=value, geom="tile", main="Correlograma con datos normalizados") +
    scale_fill_gradient2(limits=c(-1, 1))
 ```
+
+Se puede observar que, normalizando por la variable de la magnitud absoluta, aquellas variables que presentan mayor correlación se separan del resto.
